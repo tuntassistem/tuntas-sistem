@@ -14,10 +14,10 @@ echo "========================================================"
 
 # --- LANGKAH 1: Identitas ---
 echo -e "\n[1] Konfigurasi Identitas Git"
-git config --global user.name "mhamzahnashirudin"
-git config --global user.email "mhamzahnashirudin@gmail.com"
+git config --global user.name "yourname"
+git config --global user.email "yourname@gmail.com"
 git config --global init.defaultBranch main
-echo "✅ Identitas disetel ke: mhamzahnashirudin"
+echo "✅ Identitas disetel ke: yourname"
 
 # --- LANGKAH 2: Inisialisasi ---
 echo -e "\n[2] Inisialisasi Repo Lokal"
