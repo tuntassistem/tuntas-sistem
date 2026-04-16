@@ -1,0 +1,27 @@
+# ── Streamlit secrets — JANGAN PERNAH di-commit! ─────────────────────────────
+.streamlit/secrets.toml
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# ── Virtual environment ───────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+.env
+
+# ── OS / Editor ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# ── Data ekspor lokal ─────────────────────────────────────────────────────────
+exports/
+*.csv
+*.xlsx

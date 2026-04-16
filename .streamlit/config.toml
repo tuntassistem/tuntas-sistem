@@ -1,0 +1,28 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# T.U.N.T.A.S — Streamlit Theme Configuration
+# Identitas Korporat ID FOOD
+# ─────────────────────────────────────────────────────────────────────────────
+
+[theme]
+# Primary: Biru ID FOOD — stabilitas & kepercayaan
+primaryColor        = "#0054A6"
+
+# Background halaman utama
+backgroundColor     = "#FFFFFF"
+
+# Background elemen kedua (sidebar, expander, input)
+secondaryBackgroundColor = "#EEF4FF"
+
+# Teks utama — navy gelap agar kontras tinggi di light mode
+textColor           = "#1E293B"
+
+# Font — sistem korporat yang bersih
+font                = "sans serif"
+
+[server]
+enableCORS = true
+enableXsrfProtection = true
+
+[browser]
+# Matikan telemetri usage statistics
+gatherUsageStats    = false

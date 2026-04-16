@@ -1,0 +1,19 @@
+# ── Core framework ────────────────────────────────────────────────────────────
+streamlit>=1.35.0
+
+# ── Database ───────────────────────────────────────────────────────────────────
+supabase>=2.5.0
+
+# ── Data processing ────────────────────────────────────────────────────────────
+pandas>=2.1.0
+numpy>=1.26.0
+
+# ── Visualisasi ────────────────────────────────────────────────────────────────
+plotly>=5.20.0
+
+# ── Icons — membaca SVG dari bundel zip Lucide ─────────────────────────────────
+# Digunakan oleh utils/icons.py sebagai pengganti streamlit-lucide (tidak ada di PyPI)
+lucide>=1.1.3
+
+# ── Export ─────────────────────────────────────────────────────────────────────
+openpyxl>=3.1.2
