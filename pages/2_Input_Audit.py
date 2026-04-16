@@ -382,3 +382,4 @@ st.markdown(
 
 # Paksa pembersihan memori setelah render selesai
 gc.collect()
+#feat: T.U.N.T.A.S v1.0 — SPI PT. PG Candi Baru
