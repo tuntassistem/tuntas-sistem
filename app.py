@@ -39,30 +39,30 @@ credentials = {
 authenticator = stauth.Authenticate(
     credentials,
     "T.U.N.T.A.S_session", 
-    "SPI_Candi_Baru_Secret_2024_!#",               
+    "SPI_Candi_Baru_Secret_2024_!#",                
     cookie_expiry_days=30
 )
 
-# 4. LOGIKA AUTHENTIKASI (Silent Check)
-# Kita panggil login tanpa lokasi spesifik dulu untuk memicu pengecekan cookie
+# 4. LOGIKA AUTHENTIKASI (Silent Check Cookie)
+# Memanggil unrendered agar status session_state terupdate tanpa menggambar UI login dulu
 authenticator.login(location='unrendered')
 
-# --- LOGIKA TAMPILAN UTAMA ---
+# --- GERBANG TAMPILAN UTAMA ---
 
-# CASE A: USER SUDAH TERAUTENTIKASI (Cookie Valid atau Baru Login)
+# CASE A: USER SUDAH TERAUTENTIKASI (Session Aktif atau Cookie Valid)
 if st.session_state.get("authentication_status"):
     user_name = st.session_state["name"]
     
-    # DEFINISI HALAMAN
+    # 1. DEFINISI HALAMAN (Hanya dibaca jika sudah login)
     pg_home = st.Page("pages/0_Beranda.py", title="Beranda", default=True)
     pg_dash = st.Page("pages/1_Dashboard.py", title="Dashboard")
     pg_input = st.Page("pages/2_Input_Audit.py", title="Input Temuan")
     pg_action = st.Page("pages/3_Action_Plans.py", title="Action Plans")
 
-    # NAVIGASI
+    # 2. INISIALISASI NAVIGASI (Sidebar disembunyikan bawaan Streamlit agar kita bisa pakai Sidebar Custom)
     pg = st.navigation([pg_home, pg_dash, pg_input, pg_action], position="hidden")
 
-    # --- SIDEBAR CUSTOM ---
+    # 3. SIDEBAR CUSTOM
     with st.sidebar:
         st.write(f"Halo, **{user_name}** 👋")
         st.divider()
@@ -76,7 +76,7 @@ if st.session_state.get("authentication_status"):
         ]
 
         for icon_k, page_obj, label in nav_items:
-            # Pengecekan halaman aktif untuk indikator visual
+            # Penentuan status aktif
             current_pg_title = st.session_state.get("current_page_title", pg_home.title)
             is_active = (current_pg_title == page_obj.title)
             display_label = f"**{label}** ←" if is_active else label
@@ -100,13 +100,29 @@ if st.session_state.get("authentication_status"):
                 gc.collect()
                 st.rerun()
         with col_2:
-            authenticator.logout('Keluar', 'main')
+            # Logout dialihkan ke unrendered agar kita bisa handle manual pembersihan session
+            if st.button("Keluar", type="secondary", use_container_width=True):
+                authenticator.logout(location='unrendered')
+                st.session_state["authentication_status"] = None
+                st.rerun()
 
     # JALANKAN HALAMAN YANG DIPILIH
     pg.run()
 
 # CASE B: USER BELUM LOGIN ATAU PASSWORD SALAH
 else:
+    # Paksa sembunyikan sidebar agar tidak bisa diintip saat login page
+    st.markdown("""
+        <style>
+            [data-testid="stSidebar"] {
+                display: none;
+            }
+            [data-testid="stSidebarCollapsedControl"] {
+                display: none;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
     col_img, col_login = st.columns([2, 1], gap="large")
 
     with col_img:
@@ -128,7 +144,7 @@ else:
 
     with col_login:
         st.write("### Login System")
-        # Munculkan form login di sini
+        # Munculkan form login secara eksplisit di kolom login
         authenticator.login(location='main')
         
         if st.session_state.get("authentication_status") is False:
