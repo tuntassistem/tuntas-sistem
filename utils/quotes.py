@@ -40,3 +40,4 @@ QUOTES_LIST = [
 
 def get_random_quote():
     return random.choice(QUOTES_LIST)
+#feat: T.U.N.T.A.S v1.0 — SPI PT. PG Candi Baru
