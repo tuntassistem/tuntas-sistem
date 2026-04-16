@@ -75,7 +75,7 @@ with st.sidebar:
         f'<div style="font-size:0.7rem;color:rgba(255,255,255,0.45);padding:0 0.5rem;">'
         f'Format No. Temuan:<br>'
         f'<strong style="color:rgba(255,255,255,0.7);">TEM-SPI-TAHUN-NNN</strong><br>'
-        f'Contoh: TEM-SPI-2026-007</div>',
+        f'Contoh: T-SPI-2026-007</div>',
         unsafe_allow_html=True,
     )
 
