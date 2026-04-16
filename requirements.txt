@@ -1,6 +1,6 @@
 # ── Core framework ────────────────────────────────────────────────────────────
 streamlit>=1.35.0
-streamlit-authenticator>=0.3.1
+streamlit-authenticator>=0.3.1 
 
 # ── Database ───────────────────────────────────────────────────────────────────
 supabase>=2.5.0
@@ -18,3 +18,4 @@ lucide>=1.1.3
 
 # ── Export ─────────────────────────────────────────────────────────────────────
 openpyxl>=3.1.2
+#feat: T.U.N.T.A.S v1.0 — SPI PT. PG Candi Baru
