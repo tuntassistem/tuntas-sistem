@@ -1,14 +1,26 @@
-# 🏛️ T.U.N.T.A.S
-## Trackable Unit for Networked & Transparent Audit System
-
-> **Satuan Pengawas Internal (SPI) PT. PG Candi Baru**  
-> Stack: Python · Streamlit · Supabase (PostgreSQL Cloud)  
-> Identitas Korporat: **ID FOOD** — Biru `#0054A6` & Hijau `#00A651`  
-> Periode: Maret – Juni 2026 | Program Magang S1 Manajemen UNESA
+# 🚀 T.U.N.T.A.S 
+### **Trackable Unit for Networked & Transparent Audit System**
 
 [![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io)
 [![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
 [![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![UNESA](https://img.shields.io/badge/University-UNESA-003366?style=for-the-badge&logo=unicef&logoColor=FFCC00)](https://www.unesa.ac.id)
+[![Maintainer](https://img.shields.io/badge/Maintainer-SPI_PGCB-0054A6?style=for-the-badge)](https://www.pgcandibaru.com/)
+
+---
+
+## 🏛️ Tentang Proyek
+**T.U.N.T.A.S** adalah platform manajemen audit digital terintegrasi yang dirancang khusus untuk **Satuan Pengawas Internal (SPI) PT. PG Candi Baru (ID FOOD)**. Sistem ini bertujuan untuk mengeliminasi inefisiensi pelaporan manual dan memastikan setiap temuan audit terpantau secara transparan hingga tahap penyelesaian (*Action Plans*).
+
+> **Visi Sistem:** Mewujudkan akuntabilitas audit yang *real-time*, terukur, dan terdokumentasi secara digital untuk mendukung keberlanjutan industri gula nasional.
+
+---
+
+## ✨ Fitur Utama
+* **📊 Dashboard Analytics:** Visualisasi KPI temuan audit, status penyelesaian, dan sebaran risiko per unit kerja secara interaktif.
+* **📝 Form Input 5C:** Standardisasi input temuan berdasarkan kriteria *Condition, Cause, Consequences, Complexity,* dan *Control*.
+* **🛠️ Action Plan Tracker:** Monitoring bertahap untuk rencana tindak lanjut (Action Plans) hingga tahap verifikasi akhir oleh auditor.
+* **💾 Cloud Integration:** Sinkronisasi data langsung ke database PostgreSQL Cloud (Supabase).
 
 ---
 
@@ -43,8 +55,8 @@ tuntas/
 ## Instalasi
 
 ```bash
-git clone https://github.com/USERNAME/tuntas-pgcb.git
-cd tuntas-pgcb
+git clone https://github.com/tuntassistem/tuntas-sistem
+cd tuntas-sistem
 
 python -m venv venv
 source venv/bin/activate   # Windows: venv\Scripts\activate
@@ -72,12 +84,11 @@ streamlit run app.py
 
 ## Desain & Brand
 
-| Token | Nilai | Makna |
-|---|---|---|
-| `BLUE`  | `#0054A6` | ID FOOD Primary — stabilitas & kepercayaan |
-| `GREEN` | `#00A651` | ID FOOD Success — sustainabilitas |
-| `RED`   | `#DC2626` | Danger / Kritis |
-| `AMBER` | `#D97706` | Warning / Tinggi |
+| Elemen | Warna | Hex | Representasi |
+|---|---|---|---|
+| **ID FOOD Blue** | 🔵 | `#0054A6` | Stabilitas, Integritas, Profesionalisme |
+| **ID FOOD Green** | 🟢 | `#00A651` | Pertumbuhan, Sustainabilitas |
+| **Alert Red** | 🔴 | `#DC2626` | Risiko Kritis / Temuan Mayor |
 
 **Ikon:** Lucide icon set via library `lucide` (Python) — dirender sebagai inline SVG melalui `utils/icons.py`. Tidak ada dependensi `streamlit-lucide` (paket tersebut tidak tersedia di PyPI).
 
