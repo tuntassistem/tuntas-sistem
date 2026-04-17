@@ -28,7 +28,7 @@ QUOTES_LIST = [
     '"Kebenaran adalah anak waktu, bukan otoritas." – Francis Bacon',
     '"Kita adalah apa yang kita kerjakan berulang kali." – Aristoteles',
     '"Mengetahui diri sendiri adalah awal kebijaksanaan." – Socrates',
-    '"Berpikir itu berat, karena itu sedikit orang yang melakukannya." – Carl Jung'
+    '"Berpikir itu berat, karena itu sedikit orang yang melakukannya." – Carl Jung',
 
     # --- 5. FILSAFAT ISLAM (Logika & Kebijaksanaan) ---
     '"Keyakinan tidak bisa dikalahkan oleh keraguan." – Imam Syafi’i',
