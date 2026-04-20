@@ -26,10 +26,14 @@ st.set_page_config(
 inject_global_css()
 
 # 2. DATA USER & AUTH (Official Streamlit Method to Plain Dict)
-# .to_dict() adalah cara resmi untuk mengubah brankas AttrDict jadi Dict biasa
-secrets_dict = st.secrets.to_dict()
-credentials = secrets_dict["credentials"]
-auth_config = secrets_dict["auth"]
+# Memastikan sistem tidak crash jika secrets belum terisi
+try:
+    secrets_dict = st.secrets.to_dict()
+    credentials = secrets_dict["credentials"]
+    auth_config = secrets_dict["auth"]
+except KeyError as e:
+    st.error(f"Konfigurasi Rahasia (Secrets) tidak lengkap: {e}")
+    st.stop()
 
 # 3. INISIALISASI AUTHENTICATOR
 authenticator = stauth.Authenticate(
@@ -40,6 +44,7 @@ authenticator = stauth.Authenticate(
 )
 
 # 4. LOGIKA AUTHENTIKASI (Silent Check Cookie)
+# Memeriksa apakah user punya cookie yang masih valid sebelum render apapun
 authenticator.login(location='unrendered')
 
 # --- GERBANG TAMPILAN UTAMA ---
@@ -82,6 +87,7 @@ if st.session_state.get("authentication_status"):
                 </div>
                 """, unsafe_allow_html=True
             )
+            # Link Halaman
             if st.page_link(page_obj, label=f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{display_label}"):
                 st.session_state["current_page_title"] = page_obj.title
         
@@ -89,21 +95,24 @@ if st.session_state.get("authentication_status"):
         
         col_1, col_2 = st.columns(2)
         with col_1:
-            if st.button("Bersihkan", type="primary", use_container_width=True, help="Hapus Cache & RAM"):
+            # FIX: Ganti use_container_width=True ke width="stretch"
+            if st.button("Bersihkan", type="primary", width="stretch", help="Hapus Cache & RAM"):
                 st.cache_data.clear()
                 gc.collect()
                 st.rerun()
         with col_2:
-            if st.button("Keluar", type="secondary", use_container_width=True):
+            # FIX: Ganti use_container_width=True ke width="stretch"
+            if st.button("Keluar", type="secondary", width="stretch"):
                 authenticator.logout(location='unrendered')
                 st.session_state["authentication_status"] = None
                 st.rerun()
 
     # JALANKAN HALAMAN
     pg.run()
+
 # CASE B: USER BELUM LOGIN / GAGAL
 else:
-    # 1. CEK & KUNCI QUOTE (Agar tidak berubah saat rerun/glitch)
+    # 1. CEK & KUNCI QUOTE
     if "login_quote" not in st.session_state:
         st.session_state["login_quote"] = get_random_quote()
     
@@ -120,7 +129,6 @@ else:
     col_img, col_login = st.columns([2, 1], gap="large")
 
     with col_img:
-        # Gunakan quote yang sudah dikunci di session_state
         st.markdown(f"""
             <div style="background-color: #B4D9F3; padding: 40px; border-radius: 15px; border-left: 10px solid #1f77b4; margin-top: 50px;">
                 <h2 style="color: #1f77b4; font-family: 'Georgia', serif; font-style: italic;">{selected_quote}</h2>
@@ -140,7 +148,6 @@ else:
         st.write("### Login System")
         authenticator.login(location='main')
         
-        # Cek status setelah login
         auth_status = st.session_state.get("authentication_status")
         
         if auth_status is False:
@@ -148,10 +155,10 @@ else:
         elif auth_status is None:
             st.caption('Masukkan kredensial SPI untuk mengakses data.')
         
-        # Jika berhasil login, kita hapus kunci quote-nya supaya 
-        # saat logout nanti dapet quote baru lagi (opsional)
         if auth_status:
-            del st.session_state["login_quote"]
+            # Hapus quote agar saat logout dapet quote baru
+            if "login_quote" in st.session_state:
+                del st.session_state["login_quote"]
             st.rerun()
 
 # ── PEMBERSIHAN RAM AKHIR ─────────────────────────────────────────────────
