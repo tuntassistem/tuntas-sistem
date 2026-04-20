@@ -40,7 +40,6 @@ from utils.supabase_client import fetch_audit_findings, fetch_action_plans
 inject_global_css()
 
 # ── CSS SAKTI: Flexbox Equal Height ──────────────────────────────────────────
-# Ini yang memastikan kolom kiri dan kanan tingginya sama secara otomatis
 st.markdown(f"""
     <style>
         /* Mencari kontainer kolom Streamlit dan memaksa stretch */
@@ -48,19 +47,21 @@ st.markdown(f"""
             display: flex;
             align-items: stretch;
         }}
+        
         /* Membuat container internal mengikuti tinggi kolom */
         [data-testid="stVerticalBlock"] {{
             flex: 1;
             display: flex;
             flex-direction: column;
         }}
+        
         /* Class pegas: Memaksa card paling bawah untuk mengisi sisa ruang */
         .spacer-card {{
             flex-grow: 1;
             display: flex;
             flex-direction: column;
-            justify-content: center; /* Konten di tengah secara vertikal */
-        }
+            justify-content: center;
+        }}
     </style>
 """, unsafe_allow_html=True)
 
