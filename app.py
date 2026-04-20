@@ -13,153 +13,90 @@ gc.collect()
 import streamlit as st
 import streamlit_authenticator as stauth
 import os
+import gc
 from utils.styles import inject_global_css
 from utils.icons import icon_html
 from utils.quotes import get_random_quote
 
-# 1. KONFIGURASI HALAMAN
-st.set_page_config(
-    page_title="T.U.N.T.A.S", 
-    page_icon=os.path.join("assets", "tuntas_logos.svg"),
-    layout="wide"
-)
+# --- CONFIG ---
+st.set_page_config(page_title="T.U.N.T.A.S", layout="wide")
 inject_global_css()
 
-# 2. DATA USER & AUTH (Official Streamlit Method to Plain Dict)
-# Memastikan sistem tidak crash jika secrets belum terisi
+# --- LOAD AUTH ---
 try:
-    secrets_dict = st.secrets.to_dict()
-    credentials = secrets_dict["credentials"]
-    auth_config = secrets_dict["auth"]
-except KeyError as e:
-    st.error(f"Konfigurasi Rahasia (Secrets) tidak lengkap: {e}")
+    auth_data = st.secrets.to_dict()
+    authenticator = stauth.Authenticate(
+        auth_data["credentials"],
+        auth_data["auth"]["cookie_name"],
+        auth_data["auth"]["cookie_key"],
+        auth_data["auth"]["cookie_expiry_days"]
+    )
+except Exception as e:
+    st.error("Secrets.toml tidak valid!")
     st.stop()
 
-# 3. INISIALISASI AUTHENTICATOR
-authenticator = stauth.Authenticate(
-    credentials,
-    auth_config["cookie_name"],
-    auth_config["cookie_key"],
-    auth_config["cookie_expiry_days"]
-)
+# --- LOGIKA GERBANG (LOGIN) ---
+def login_gate():
+    # Sembunyikan Sidebar
+    st.markdown("<style>[data-testid='stSidebar']{display:none;}</style>", unsafe_allow_html=True)
+    
+    col_img, col_login = st.columns([2, 1], gap="large")
+    with col_img:
+        st.markdown(f"<h2>{get_random_quote()}</h2>", unsafe_allow_html=True)
+        st.markdown("<h1>T.U.N.T.A.S v1.0</h1><p>SPI PT. PG Candi Baru</p>", unsafe_allow_html=True)
 
-# 4. LOGIKA AUTHENTIKASI (Silent Check Cookie)
-# Memeriksa apakah user punya cookie yang masih valid sebelum render apapun
+    with col_login:
+        st.write("### Login System")
+        # PANGGIL LOGIN SEKALI SAJA DI SINI
+        name, authentication_status, username = authenticator.login(location='main')
+        
+        if authentication_status is False:
+            st.error('Username/password salah!')
+        elif authentication_status is None:
+            st.caption('Masukkan kredensial SPI.')
+        
+        return authentication_status
+
+# --- JALANKAN SISTEM ---
+# 1. Cek Cookie secara diam-diam dulu
 authenticator.login(location='unrendered')
 
-# --- GERBANG TAMPILAN UTAMA ---
-
-# CASE A: USER SUDAH TERAUTENTIKASI
 if st.session_state.get("authentication_status"):
-    user_name = st.session_state["name"]
+    # --- JIKA SUDAH LOGIN (DASHBOARD UTAMA) ---
+    st.session_state["authenticator"] = authenticator
     
-    # DEFINISI HALAMAN
+    # Inisialisasi Halaman
     pg_home = st.Page("pages/0_Beranda.py", title="Beranda", default=True)
     pg_dash = st.Page("pages/1_Dashboard.py", title="Dashboard")
     pg_input = st.Page("pages/2_Input_Audit.py", title="Input Temuan")
     pg_action = st.Page("pages/3_Action_Plans.py", title="Action Plans")
 
-    # INISIALISASI NAVIGASI
     pg = st.navigation([pg_home, pg_dash, pg_input, pg_action], position="hidden")
 
-    # SIDEBAR CUSTOM
+    # Sidebar Custom
     with st.sidebar:
-        st.write(f"Halo, **{user_name}** 👋")
+        st.write(f"Halo, **{st.session_state['name']}** 👋")
         st.divider()
-        
-        st.markdown("### MENU NAVIGASI")
-        nav_items = [
-            ("home",         pg_home,   "Beranda"),
-            ("dashboard",    pg_dash,   "Dashboard"),
-            ("input_temuan", pg_input,  "Input Temuan"),
-            ("action_plans", pg_action, "Action Plans"),
-        ]
-
-        for icon_k, page_obj, label in nav_items:
-            current_pg_title = st.session_state.get("current_page_title", pg_home.title)
-            is_active = (current_pg_title == page_obj.title)
-            display_label = f"**{label}** ←" if is_active else label
-            
-            st.markdown(
-                f"""
-                <div style="position: relative; height: 0px; top: 5px; left: 15px; pointer-events: none; z-index: 100;">
-                    {icon_html(icon_k, size=18, color="white")}
-                </div>
-                """, unsafe_allow_html=True
-            )
-            # Link Halaman
-            if st.page_link(page_obj, label=f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{display_label}"):
+        # Navigasi Manual
+        for icon_k, page_obj, label in [("home", pg_home, "Beranda"), ("dashboard", pg_dash, "Dashboard"), ("input_temuan", pg_input, "Input Temuan"), ("action_plans", pg_action, "Action Plans")]:
+            active = (st.session_state.get("current_page_title") == page_obj.title)
+            display = f"**{label}** ←" if active else label
+            st.markdown(f'<div style="position:relative;top:32px;left:15px;pointer-events:none;">{icon_html(icon_k, 18, "white")}</div>', unsafe_allow_html=True)
+            if st.page_link(page_obj, label=f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{display}"):
                 st.session_state["current_page_title"] = page_obj.title
         
         st.divider()
-        
-        col_1, col_2 = st.columns(2)
-        with col_1:
-            # FIX: Ganti use_container_width=True ke width="stretch"
-            if st.button("Bersihkan", type="primary", width="stretch", help="Hapus Cache & RAM"):
-                st.cache_data.clear()
-                gc.collect()
-                st.rerun()
-        with col_2:
-            # FIX: Ganti use_container_width=True ke width="stretch"
-            if st.button("Keluar", type="secondary", width="stretch"):
-                authenticator.logout(location='unrendered')
-                st.session_state["authentication_status"] = None
-                st.rerun()
+        if st.button("Keluar", width="stretch"):
+            authenticator.logout(location='unrendered')
+            st.session_state["authentication_status"] = None
+            st.rerun()
 
-    # JALANKAN HALAMAN
     pg.run()
 
-# CASE B: USER BELUM LOGIN / GAGAL
 else:
-    # 1. CEK & KUNCI QUOTE
-    if "login_quote" not in st.session_state:
-        st.session_state["login_quote"] = get_random_quote()
-    
-    selected_quote = st.session_state["login_quote"]
-
-    # 2. Sembunyikan sidebar saat login page
-    st.markdown("""
-        <style>
-            [data-testid="stSidebar"] { display: none; }
-            [data-testid="stSidebarCollapsedControl"] { display: none; }
-        </style>
-    """, unsafe_allow_html=True)
-
-    col_img, col_login = st.columns([2, 1], gap="large")
-
-    with col_img:
-        st.markdown(f"""
-            <div style="background-color: #B4D9F3; padding: 40px; border-radius: 15px; border-left: 10px solid #1f77b4; margin-top: 50px;">
-                <h2 style="color: #1f77b4; font-family: 'Georgia', serif; font-style: italic;">{selected_quote}</h2>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("""
-            <div style="margin-top: 30px;">
-                <h1 style='margin-bottom: 0; color: #1f77b4;'>T.U.N.T.A.S <span style='font-size: 0.5em; color: #1f77b4;'>v1.0</span></h1>
-                <p style='font-size: 1.1em; color: #555;'><i>Trackable Unit for Networked & Transparent Audit System</i></p>
-                <hr style='margin-top: 0;'>
-                <h4 style='color: #1f77b4;'>SPI PT. PG Candi Baru</h4>
-            </div>
-        """, unsafe_allow_html=True)
-
-    with col_login:
-        st.write("### Login System")
-        authenticator.login(location='main')
-        
-        auth_status = st.session_state.get("authentication_status")
-        
-        if auth_status is False:
-            st.error('Username/password salah!')
-        elif auth_status is None:
-            st.caption('Masukkan kredensial SPI untuk mengakses data.')
-        
-        if auth_status:
-            # Hapus quote agar saat logout dapet quote baru
-            if "login_quote" in st.session_state:
-                del st.session_state["login_quote"]
-            st.rerun()
+    # --- JIKA BELUM LOGIN (TAMPILKAN GATE) ---
+    if login_gate():
+        st.rerun()
 
 # ── PEMBERSIHAN RAM AKHIR ─────────────────────────────────────────────────
 gc.collect()
