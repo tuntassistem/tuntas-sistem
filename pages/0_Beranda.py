@@ -212,8 +212,7 @@ with col_r:
             """,
             unsafe_allow_html=True,
         )
-
-    # PERBAIKAN DI SINI: Tag </div> dibersihkan dan dibungkus kontainer tunggal
+        
     section_title("Skala Signifikansi Temuan")
     badges_html = ""
     badges = [
@@ -233,7 +232,37 @@ with col_r:
         </div>
         """
     
-    st.markdown(f'<div class="tnt-card">{badges_html}</div>', unsafe_allow_html=True)
+    st.markdown(
+        f"""
+        <div class="tnt-card">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                <span style="background:{RED};color:white;padding:2px 10px;
+                border-radius:20px;font-size:0.72rem;font-weight:700;
+                min-width:65px;text-align:center;display:inline-block;">KRITIS</span>
+                <span style="font-size:0.8rem;color:{GRAY_500};">Eskalasi segera ke Direktur</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                <span style="background:{AMBER};color:white;padding:2px 10px;
+                border-radius:20px;font-size:0.72rem;font-weight:700;
+                min-width:65px;text-align:center;display:inline-block;">TINGGI</span>
+                <span style="font-size:0.8rem;color:{GRAY_500};">Tindakan dalam waktu dekat</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                <span style="background:{BLUE};color:white;padding:2px 10px;
+                border-radius:20px;font-size:0.72rem;font-weight:700;
+                min-width:65px;text-align:center;display:inline-block;">SEDANG</span>
+                <span style="font-size:0.8rem;color:{GRAY_500};">Pantau & rencanakan perbaikan</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span style="background:{GREEN};color:white;padding:2px 10px;
+                border-radius:20px;font-size:0.72rem;font-weight:700;
+                min-width:65px;text-align:center;display:inline-block;">RENDAH</span>
+                <span style="font-size:0.8rem;color:{GRAY_500};">Monitor berkala</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
         
 st.divider()
 
