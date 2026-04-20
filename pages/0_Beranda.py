@@ -213,7 +213,9 @@ with col_r:
             unsafe_allow_html=True,
         )
         
+     st.markdown('<div style="margin-top: -12px;"></div>', unsafe_allow_html=True)
     section_title("Skala Signifikansi Temuan")
+
     badges_html = ""
     badges = [
         ("KRITIS", RED,   "Eskalasi segera ke Direktur"),
@@ -231,9 +233,6 @@ with col_r:
             <span style="font-size:0.8rem;color:{GRAY_500};">{desc}</span>
         </div>
         """
-
-    st.markdown('<div style="margin-top: -12px;"></div>', unsafe_allow_html=True)
-    section_title("Skala Signifikansi Temuan")
     
     st.markdown(
         f"""
