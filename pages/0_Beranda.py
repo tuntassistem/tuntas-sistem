@@ -15,7 +15,7 @@ import os
 # 1. Load Icon
 icon_path = os.path.join("assets", "tuntas_logos.svg")
 
-# 2. Set Page Config (WAJIB PALING ATAS)
+# 2. Set Page Config (Wajib di urutan pertama)
 st.set_page_config(
     page_title="T.U.N.T.A.S — SPI PT. PG Candi Baru",
     page_icon=icon_path,
@@ -36,38 +36,33 @@ from utils.styles import inject_global_css, section_title, BLUE, GREEN, RED, AMB
 from utils.icons import icon_html
 from utils.supabase_client import fetch_audit_findings, fetch_action_plans
 
-# Jalankan CSS Global dari utils
 inject_global_css()
 
-# ── CSS KHUSUS DASHBOARD (FIXED: Tanpa f-string agar tidak error kurung kurawal) ──
+# ── CSS SAKTI (FIXED: Tanpa awalan 'f' agar tidak SyntaxError di kurung kurawal) ──
 st.markdown("""
-    <style>
-        /* Memaksa kolom kiri dan kanan sama tinggi (Equal Height) */
-        [data-testid="stHorizontalBlock"] {
-            display: flex;
-            align-items: stretch;
-        }
-        /* Membuat container internal mengikuti tinggi kolom */
-        [data-testid="stVerticalBlock"] {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-        /* Class pegas: Memaksa card paling bawah untuk mengisi sisa ruang */
-        .spacer-card {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        /* Mengatur grid agar lebih rapi */
-        .scope-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            font-size: 0.82rem;
-        }
-    </style>
+<style>
+    [data-testid="stHorizontalBlock"] {
+        display: flex;
+        align-items: stretch;
+    }
+    [data-testid="stVerticalBlock"] {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .spacer-card {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .scope-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        font-size: 0.82rem;
+    }
+</style>
 """, unsafe_allow_html=True)
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
@@ -97,12 +92,6 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
     st.divider()
-    st.markdown(
-        '<div style="padding:0 0.8rem;font-size:0.68rem;color:rgba(255,255,255,0.4);line-height:1.6;">'
-        'T.U.N.T.A.S v1.0<br>UNESA × PG Candi Baru<br>Muhammad Hamzah Nashirudin'
-        '</div>',
-        unsafe_allow_html=True,
-    )
 
 # ── Header Utama ──────────────────────────────────────────────────────────────
 st.markdown(
@@ -125,7 +114,7 @@ st.markdown(
 )
 
 # ── Load Data ─────────────────────────────────────────────────────────────────
-with st.spinner("Memuat data dari Supabase..."):
+with st.spinner("Memuat data..."):
     df_finding = fetch_audit_findings()
     df_ap      = fetch_action_plans()
 
@@ -133,17 +122,18 @@ with st.spinner("Memuat data dari Supabase..."):
 section_title("Ringkasan Status Pengawasan")
 c1, c2, c3, c4, c5 = st.columns(5)
 
-total_temuan  = len(df_finding)
-temuan_open   = int((df_finding["status_temuan"].astype(str) == "OPEN").sum()) if not df_finding.empty else 0
-temuan_kritis = int((df_finding["tingkat_signifikansi"].astype(str) == "KRITIS").sum()) if not df_finding.empty else 0
-tl_terlambat  = int((df_ap["status_tl"].astype(str) == "MELEWATI_TARGET").sum()) if not df_ap.empty else 0
-tl_selesai    = int((df_ap["status_tl"].astype(str) == "CLOSED").sum()) if not df_ap.empty else 0
+if not df_finding.empty and not df_ap.empty:
+    total_temuan  = len(df_finding)
+    temuan_open   = int((df_finding["status_temuan"].astype(str) == "OPEN").sum())
+    temuan_kritis = int((df_finding["tingkat_signifikansi"].astype(str) == "KRITIS").sum())
+    tl_terlambat  = int((df_ap["status_tl"].astype(str) == "MELEWATI_TARGET").sum())
+    tl_selesai    = int((df_ap["status_tl"].astype(str) == "CLOSED").sum())
 
-c1.metric("Total Temuan", total_temuan)
-c2.metric("Temuan Open", temuan_open, delta=f"{temuan_open} belum ditutup", delta_color="inverse")
-c3.metric("Temuan Kritis", temuan_kritis, delta=f"+{temuan_kritis} eskalasi", delta_color="inverse")
-c4.metric("TL Terlambat", tl_terlambat, delta_color="inverse")
-c5.metric("TL Selesai", tl_selesai)
+    c1.metric("Total Temuan", total_temuan)
+    c2.metric("Temuan Open", temuan_open, delta=f"{temuan_open} sisa", delta_color="inverse")
+    c3.metric("Temuan Kritis", temuan_kritis, delta=f"+{temuan_kritis} eskalasi", delta_color="inverse")
+    c4.metric("TL Terlambat", tl_terlambat, delta_color="inverse")
+    c5.metric("TL Selesai", tl_selesai)
 
 st.divider()
 
@@ -155,10 +145,13 @@ with col_l:
     st.markdown(
         f"""
         <div class="tnt-card" style="border-left:4px solid {BLUE}; background:#EEF4FF;">
-            <div style="font-size:0.92rem; line-height:1.6; color:#1E293B;">
-                <strong>T.U.N.T.A.S</strong> adalah sistem manajemen audit internal
-                SPI PT. PG Candi Baru yang mendukung standar <strong>5C (IIA)</strong> 
-                serta monitoring real-time.
+            <div style="font-size:0.92rem; line-height:1.7; color:#1E293B;">
+                <strong>T.U.N.T.A.S</strong> adalah sistem manajemen audit internal untuk SPI PT. PG Candi Baru yang memungkinkan:
+                <ul style="margin-top:5px; margin-bottom:0;">
+                    <li>Pencatatan temuan audit standar <strong>5C (IIA)</strong></li>
+                    <li>Monitoring tindak lanjut rekomendasi secara <strong>real-time</strong></li>
+                    <li>Alert otomatis tindak lanjut yang melewati <strong>deadline</strong></li>
+                </ul>
             </div>
         </div>
         """,
@@ -184,19 +177,16 @@ with col_l:
 
 with col_r:
     section_title("Panduan Penggunaan")
-    guide = [
-        ("dashboard", "Dashboard", "Visualisasi KPI", BLUE),
-        ("input_temuan", "Input Temuan", "Standar 5C IIA", BLUE),
-        ("action_plans", "Action Plans", "Update tindak lanjut", GREEN),
-    ]
-    for ico, name, desc, color in guide:
+    for ico, name, desc, color in [("dashboard", "Dashboard", "Visualisasi KPI", BLUE), 
+                                   ("input_temuan", "Input Temuan", "Standar 5C IIA", BLUE),
+                                   ("action_plans", "Action Plans", "Update tindak lanjut", GREEN)]:
         st.markdown(
             f"""
             <div class="tnt-card" style="margin-bottom:8px; padding:0.6rem 1rem;">
                 <div style="display:flex; align-items:center; gap:10px;">
                     <div style="background:{color}; border-radius:8px; padding:6px;">{icon_html(ico, 16, "white")}</div>
                     <div>
-                        <div style="font-weight:700; font-size:0.85rem; color:#1E293B;">{name}</div>
+                        <div style="font-weight:700; font-size:0.85rem;">{name}</div>
                         <div style="font-size:0.75rem; color:{GRAY_500};">{desc}</div>
                     </div>
                 </div>
@@ -211,12 +201,10 @@ with col_r:
             <span style="background:{c}; color:white; padding:2px 10px; border-radius:20px; 
             font-size:0.72rem; font-weight:700; min-width:65px; text-align:center;">{l}</span>
             <span style="font-size:0.8rem; color:{GRAY_500};">{d}</span>
-        </div>""" for l, c, d in [
-            ("KRITIS", RED, "Eskalasi segera ke Direktur"),
-            ("TINGGI", AMBER, "Tindakan dalam waktu dekat"),
-            ("SEDANG", BLUE, "Pantau perbaikan"),
-            ("RENDAH", GREEN, "Monitor berkala")
-        ]])
+        </div>""" for l, c, d in [("KRITIS", RED, "Eskalasi segera ke Direktur"), 
+                                 ("TINGGI", AMBER, "Tindakan dekat"), 
+                                 ("SEDANG", BLUE, "Pantau perbaikan"), 
+                                 ("RENDAH", GREEN, "Monitor berkala")]])
 
     st.markdown(
         f"""
@@ -227,20 +215,17 @@ with col_r:
         unsafe_allow_html=True,
     )
 
-# ── Alert Aktif ───────────────────────────────────────────────────────────────
+# ── Alert Aktif (FIXED: Ganti use_container_width dengan width="stretch") ─────
 st.divider()
 section_title("Peringatan Aktif")
-has_alert = False
 
 if not df_ap.empty:
     df_late = df_ap[df_ap["status_tl"].astype(str) == "MELEWATI_TARGET"]
     if not df_late.empty:
-        has_alert = True
         st.error(f"⚠️ {len(df_late)} Tindak Lanjut Melewati Target Deadline")
-        st.dataframe(df_late[["nomor_temuan","nama_unit","tgl_target"]], use_container_width=True, hide_index=True)
-
-if not has_alert:
-    st.success("✅ Tidak ada peringatan aktif. Semua tindak lanjut on-track.")
+        st.dataframe(df_late[["nomor_temuan","nama_unit","tgl_target"]], width="stretch", hide_index=True)
+    else:
+        st.success("✅ Tidak ada peringatan aktif. Semua tindak lanjut on-track.")
 
 st.markdown(
     f'<p style="font-size:0.75rem;color:{GRAY_500};text-align:center;margin-top:2rem;">'
