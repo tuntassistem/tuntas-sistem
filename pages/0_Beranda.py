@@ -163,28 +163,22 @@ with col_l:
         f"""
         <div class="tnt-card" style="margin-top:0.5rem;"> 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.82rem;">
-                <div style="padding:6px 10px; background:{BLUE};color:white;
-                            border-radius:6px; font-weight:500;">
+                <div style="padding:6px 10px; background:{BLUE};color:white; border-radius:6px; font-weight:500;">
                     {icon_html("file", 13, "white")} &nbsp;Keuangan / IT / MR
                 </div>
-                <div style="padding:6px 10px; background:{BLUE};color:white;
-                            border-radius:6px; font-weight:500;">
+                <div style="padding:6px 10px; background:{BLUE};color:white; border-radius:6px; font-weight:500;">
                     {icon_html("user", 13, "white")} &nbsp;SDM &amp; Umum
                 </div>
-                <div style="padding:6px 10px; background:{BLUE};color:white;
-                            border-radius:6px; font-weight:500;">
+                <div style="padding:6px 10px; background:{BLUE};color:white; border-radius:6px; font-weight:500;">
                     {icon_html("trending", 13, "white")} &nbsp;Tanaman
                 </div>
-                <div style="padding:6px 10px; background:{BLUE};color:white;
-                            border-radius:6px; font-weight:500;">
+                <div style="padding:6px 10px; background:{BLUE};color:white; border-radius:6px; font-weight:500;">
                     {icon_html("chart", 13, "white")} &nbsp;Instalasi
                 </div>
-                <div style="padding:6px 10px; background:{BLUE};color:white;
-                            border-radius:6px; font-weight:500;">
+                <div style="padding:6px 10px; background:{BLUE};color:white; border-radius:6px; font-weight:500;">
                     {icon_html("shield", 13, "white")} &nbsp;Pabrikasi
                 </div>
-                <div style="padding:6px 10px; background:{BLUE};color:white;
-                            border-radius:6px; font-weight:500;">
+                <div style="padding:6px 10px; background:{BLUE};color:white; border-radius:6px; font-weight:500;">
                     {icon_html("eye", 13, "white")} &nbsp;Quality Assurance
                 </div>
             </div>
@@ -203,40 +197,44 @@ with col_r:
     ]
     for ico, name, desc, color in guide:
         st.markdown(
-            f'<div class="tnt-card" style="margin-bottom:6px;padding:0.8rem 1rem;">'
-            f'<div style="display:flex;align-items:center;gap:10px;">'
-            f'<div style="background:{color};border-radius:8px;padding:7px;">'
-            f'{icon_html(ico, 18, "white")}'
-            f'</div>'
-            f'<div>'
-            f'<div style="font-weight:700;font-size:0.88rem;color:#1E293B;">{name}</div>'
-            f'<div style="font-size:0.78rem;color:{GRAY_500};">{desc}</div>'
-            f'</div>'
-            f'</div>'
-            f'</div>',
+            f"""
+            <div class="tnt-card" style="margin-bottom:6px;padding:0.8rem 1rem;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="background:{color};border-radius:8px;padding:7px;">
+                        {icon_html(ico, 18, "white")}
+                    </div>
+                    <div>
+                        <div style="font-weight:700;font-size:0.88rem;color:#1E293B;">{name}</div>
+                        <div style="font-size:0.78rem;color:{GRAY_500};">{desc}</div>
+                    </div>
+                </div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
 
+    # PERBAIKAN DI SINI: Tag </div> dibersihkan dan dibungkus kontainer tunggal
     section_title("Skala Signifikansi Temuan")
+    badges_html = ""
     badges = [
         ("KRITIS", RED,   "Eskalasi segera ke Direktur"),
         ("TINGGI", AMBER, "Tindakan dalam waktu dekat"),
         ("SEDANG", BLUE,  "Pantau & rencanakan perbaikan"),
         ("RENDAH", GREEN, "Monitor berkala"),
     ]
+    
     for label, color, desc in badges:
-        st.markdown(
-            f'</div>'
-            f'</div>'
-            f'<div style="display:flex;align-items:center;gap:8px;margin:4px 0;">'
-            f'<span style="background:{color};color:white;padding:2px 10px;'
-            f'border-radius:20px;font-size:0.72rem;font-weight:700;'
-            f'min-width:58px;text-align:center;">{label}</span>'
-            f'<span style="font-size:0.8rem;color:{GRAY_500};">{desc}</span>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
-
+        badges_html += f"""
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <span style="background:{color};color:white;padding:2px 10px;
+            border-radius:20px;font-size:0.72rem;font-weight:700;
+            min-width:65px;text-align:center;display:inline-block;">{label}</span>
+            <span style="font-size:0.8rem;color:{GRAY_500};">{desc}</span>
+        </div>
+        """
+    
+    st.markdown(f'<div class="tnt-card">{badges_html}</div>', unsafe_allow_html=True)
+        
 st.divider()
 
 # ── Alert Aktif ───────────────────────────────────────────────────────────────
