@@ -226,6 +226,8 @@ with col_r:
     ]
     for label, color, desc in badges:
         st.markdown(
+            f'</div>'
+            f'</div>'
             f'<div style="display:flex;align-items:center;gap:8px;margin:4px 0;">'
             f'<span style="background:{color};color:white;padding:2px 10px;'
             f'border-radius:20px;font-size:0.72rem;font-weight:700;'
