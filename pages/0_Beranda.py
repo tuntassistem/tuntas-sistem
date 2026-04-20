@@ -231,6 +231,9 @@ with col_r:
             <span style="font-size:0.8rem;color:{GRAY_500};">{desc}</span>
         </div>
         """
+
+    st.markdown('<div style="margin-top: -12px;"></div>', unsafe_allow_html=True)
+    section_title("Skala Signifikansi Temuan")
     
     st.markdown(
         f"""
