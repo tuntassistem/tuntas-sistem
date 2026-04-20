@@ -205,7 +205,6 @@ with col_r:
         """, unsafe_allow_html=True
         )
 
-    st.markdown('<div style="margin-top: -10px;"></div>', unsafe_allow_html=True)
     section_title("Skala Signifikansi Temuan")
     
     badges = [
