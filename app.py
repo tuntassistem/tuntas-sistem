@@ -101,10 +101,15 @@ if st.session_state.get("authentication_status"):
 
     # JALANKAN HALAMAN
     pg.run()
-
 # CASE B: USER BELUM LOGIN / GAGAL
 else:
-    # Sembunyikan sidebar saat login page
+    # 1. CEK & KUNCI QUOTE (Agar tidak berubah saat rerun/glitch)
+    if "login_quote" not in st.session_state:
+        st.session_state["login_quote"] = get_random_quote()
+    
+    selected_quote = st.session_state["login_quote"]
+
+    # 2. Sembunyikan sidebar saat login page
     st.markdown("""
         <style>
             [data-testid="stSidebar"] { display: none; }
@@ -115,7 +120,7 @@ else:
     col_img, col_login = st.columns([2, 1], gap="large")
 
     with col_img:
-        selected_quote = get_random_quote()
+        # Gunakan quote yang sudah dikunci di session_state
         st.markdown(f"""
             <div style="background-color: #B4D9F3; padding: 40px; border-radius: 15px; border-left: 10px solid #1f77b4; margin-top: 50px;">
                 <h2 style="color: #1f77b4; font-family: 'Georgia', serif; font-style: italic;">{selected_quote}</h2>
@@ -135,10 +140,19 @@ else:
         st.write("### Login System")
         authenticator.login(location='main')
         
-        if st.session_state.get("authentication_status") is False:
+        # Cek status setelah login
+        auth_status = st.session_state.get("authentication_status")
+        
+        if auth_status is False:
             st.error('Username/password salah!')
-        elif st.session_state.get("authentication_status") is None:
+        elif auth_status is None:
             st.caption('Masukkan kredensial SPI untuk mengakses data.')
+        
+        # Jika berhasil login, kita hapus kunci quote-nya supaya 
+        # saat logout nanti dapet quote baru lagi (opsional)
+        if auth_status:
+            del st.session_state["login_quote"]
+            st.rerun()
 
 # ── PEMBERSIHAN RAM AKHIR ─────────────────────────────────────────────────
 gc.collect()
