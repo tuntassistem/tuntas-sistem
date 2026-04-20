@@ -39,9 +39,33 @@ from utils.supabase_client import fetch_audit_findings, fetch_action_plans
 
 inject_global_css()
 
+# ── CSS SAKTI: Flexbox Equal Height ──────────────────────────────────────────
+# Ini yang memastikan kolom kiri dan kanan tingginya sama secara otomatis
+st.markdown(f"""
+    <style>
+        /* Mencari kontainer kolom Streamlit dan memaksa stretch */
+        [data-testid="stHorizontalBlock"] {{
+            display: flex;
+            align-items: stretch;
+        }}
+        /* Membuat container internal mengikuti tinggi kolom */
+        [data-testid="stVerticalBlock"] {{
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }}
+        /* Class pegas: Memaksa card paling bawah untuk mengisi sisa ruang */
+        .spacer-card {{
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Konten di tengah secara vertikal */
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    # Identitas sistem
     st.markdown(
         f"""
         <div style="padding:1.4rem 0.8rem 1rem 0.8rem; text-align:center;">
@@ -156,26 +180,27 @@ with col_l:
     )
 
     section_title("Lingkup Pengawasan SPI")
+    # Ditambahkan class 'spacer-card' agar dia molor mengisi ruang
     st.markdown(
         f"""
-        <div class="tnt-card" style="margin-top:0.5rem; min-height: 165px;"> 
+        <div class="tnt-card spacer-card" style="margin-top:0.5rem;"> 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.82rem;">
-                <div style="padding:8px 10px; background:{BLUE}; color:white; border-radius:6px; font-weight:500;">
+                <div style="padding:10px; background:{BLUE}; color:white; border-radius:6px; font-weight:500;">
                     {icon_html("file", 13, "white")} &nbsp;Keuangan / IT / MR
                 </div>
-                <div style="padding:8px 10px; background:{BLUE}; color:white; border-radius:6px; font-weight:500;">
+                <div style="padding:10px; background:{BLUE}; color:white; border-radius:6px; font-weight:500;">
                     {icon_html("user", 13, "white")} &nbsp;SDM & Umum
                 </div>
-                <div style="padding:8px 10px; background:{BLUE}; color:white; border-radius:6px; font-weight:500;">
+                <div style="padding:10px; background:{BLUE}; color:white; border-radius:6px; font-weight:500;">
                     {icon_html("trending", 13, "white")} &nbsp;Tanaman
                 </div>
-                <div style="padding:8px 10px; background:{BLUE}; color:white; border-radius:6px; font-weight:500;">
+                <div style="padding:10px; background:{BLUE}; color:white; border-radius:6px; font-weight:500;">
                     {icon_html("chart", 13, "white")} &nbsp;Instalasi
                 </div>
-                <div style="padding:8px 10px; background:{BLUE}; color:white; border-radius:6px; font-weight:500;">
+                <div style="padding:10px; background:{BLUE}; color:white; border-radius:6px; font-weight:500;">
                     {icon_html("shield", 13, "white")} &nbsp;Pabrikasi
                 </div>
-                <div style="padding:8px 10px; background:{BLUE}; color:white; border-radius:6px; font-weight:500;">
+                <div style="padding:10px; background:{BLUE}; color:white; border-radius:6px; font-weight:500;">
                     {icon_html("eye", 13, "white")} &nbsp;Quality Assurance
                 </div>
             </div>
@@ -193,11 +218,11 @@ with col_r:
     for ico, name, desc, color in guide:
         st.markdown(
             f"""
-            <div class="tnt-card" style="margin-bottom:6px; padding:0.6rem 1rem;">
+            <div class="tnt-card" style="margin-bottom:8px; padding:0.6rem 1rem;">
                 <div style="display:flex; align-items:center; gap:10px;">
-                    <div style="background:{color}; border-radius:8px; padding:5px;">{icon_html(ico, 16, "white")}</div>
+                    <div style="background:{color}; border-radius:8px; padding:6px;">{icon_html(ico, 16, "white")}</div>
                     <div>
-                        <div style="font-weight:700; font-size:0.85rem; color:#1E293B;">{name}</div>
+                        <div style="font-weight:700; font-size:0.88rem; color:#1E293B;">{name}</div>
                         <div style="font-size:0.75rem; color:{GRAY_500};">{desc}</div>
                     </div>
                 </div>
@@ -205,7 +230,6 @@ with col_r:
         """, unsafe_allow_html=True
         )
 
-    st.markdown('<div style="margin-top: -30px;"></div>', unsafe_allow_html=True)
     section_title("Skala Signifikansi Temuan")
     
     badges = [
@@ -222,9 +246,10 @@ with col_r:
             <span style="font-size:0.8rem; color:{GRAY_500};">{d}</span>
         </div>""" for l, c, d in badges])
 
+    # Class 'spacer-card' memastikan kotak ini tingginya sama dengan yang kiri
     st.markdown(
         f"""
-        <div class="tnt-card" style="min-height: 165px; display: flex; flex-direction: column; justify-content: center;">
+        <div class="tnt-card spacer-card">
             {badges_html}
         </div>
     """, unsafe_allow_html=True
