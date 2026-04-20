@@ -147,7 +147,6 @@ with col_l:
                 <ul style="margin:0.5rem 0 0 0; padding-left:1.1rem;">
                     <li>Pencatatan temuan audit standar <strong>5C (IIA)</strong></li>
                     <li>Monitoring tindak lanjut rekomendasi secara <strong>real-time</strong></li>
-                    <li>Visualisasi interaktif untuk pelaporan kepada <strong>Direktur</strong></li>
                     <li>Alert otomatis tindak lanjut yang melewati <strong>deadline</strong></li>
                 </ul>
             </div>
