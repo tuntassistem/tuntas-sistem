@@ -138,132 +138,87 @@ col_l, col_r = st.columns([1.3, 1])
 
 with col_l:
     section_title("Tentang Sistem")
-
-    st.markdown(
-        f"""
+    st.markdown(f"""
         <div class="tnt-card" style="border-left:4px solid {BLUE}; background:#EEF4FF;">
             <div style="font-size:0.95rem; line-height:1.75; color:#1E293B;">
-                <strong>T.U.N.T.A.S</strong> adalah sistem manajemen audit internal
-                berbasis web untuk SPI PT. PG Candi Baru yang memungkinkan:
+                <strong>T.U.N.T.A.S</strong> adalah sistem manajemen audit internal berbasis web yang memungkinkan:
                 <ul style="margin:0.5rem 0 0 0; padding-left:1.1rem;">
                     <li>Pencatatan temuan audit standar <strong>5C (IIA)</strong></li>
-                    <li>Monitoring tindak lanjut rekomendasi secara <strong>real-time</strong></li>
-                    <li>Visualisasi interaktif untuk pelaporan kepada <strong>Direktur</strong></li>
-                    <li>Alert otomatis tindak lanjut yang melewati <strong>deadline</strong></li>
+                    <li>Monitoring tindak lanjut secara <strong>real-time</strong></li>
                 </ul>
             </div>
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    """, unsafe_allow_html=True)
 
     section_title("Lingkup Pengawasan SPI")
-    
-    st.markdown(
-        f"""
-        <div class="tnt-card" style="margin-top:0.5rem;"> 
+    st.markdown(f"""
+        <div class="tnt-card" style="margin-top:0.5rem; min-height: 165px;"> 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.82rem;">
-                <div style="padding:6px 10px; background:{BLUE};color:white; border-radius:6px; font-weight:500;">
+                <div style="padding:8px 10px; background:{BLUE}; color:white; border-radius:6px; font-weight:500;">
                     {icon_html("file", 13, "white")} &nbsp;Keuangan / IT / MR
                 </div>
-                <div style="padding:6px 10px; background:{BLUE};color:white; border-radius:6px; font-weight:500;">
-                    {icon_html("user", 13, "white")} &nbsp;SDM &amp; Umum
+                <div style="padding:8px 10px; background:{BLUE}; color:white; border-radius:6px; font-weight:500;">
+                    {icon_html("user", 13, "white")} &nbsp;SDM & Umum
                 </div>
-                <div style="padding:6px 10px; background:{BLUE};color:white; border-radius:6px; font-weight:500;">
+                <div style="padding:8px 10px; background:{BLUE}; color:white; border-radius:6px; font-weight:500;">
                     {icon_html("trending", 13, "white")} &nbsp;Tanaman
                 </div>
-                <div style="padding:6px 10px; background:{BLUE};color:white; border-radius:6px; font-weight:500;">
+                <div style="padding:8px 10px; background:{BLUE}; color:white; border-radius:6px; font-weight:500;">
                     {icon_html("chart", 13, "white")} &nbsp;Instalasi
                 </div>
-                <div style="padding:6px 10px; background:{BLUE};color:white; border-radius:6px; font-weight:500;">
+                <div style="padding:8px 10px; background:{BLUE}; color:white; border-radius:6px; font-weight:500;">
                     {icon_html("shield", 13, "white")} &nbsp;Pabrikasi
                 </div>
-                <div style="padding:6px 10px; background:{BLUE};color:white; border-radius:6px; font-weight:500;">
+                <div style="padding:8px 10px; background:{BLUE}; color:white; border-radius:6px; font-weight:500;">
                     {icon_html("eye", 13, "white")} &nbsp;Quality Assurance
                 </div>
             </div>
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    """, unsafe_allow_html=True)
 
 with col_r:
     section_title("Panduan Penggunaan")
-
     guide = [
-        ("dashboard",    "Dashboard",      "Visualisasi KPI & grafik interaktif",    BLUE),
-        ("input_temuan", "Input Temuan",   "Catat temuan baru standar 5C IIA",       BLUE),
-        ("action_plans", "Action Plans",   "Update & verifikasi tindak lanjut",      GREEN),
+        ("dashboard", "Dashboard", "Visualisasi KPI interaktif", BLUE),
+        ("input_temuan", "Input Temuan", "Standar 5C IIA", BLUE),
+        ("action_plans", "Action Plans", "Update tindak lanjut", GREEN),
     ]
     for ico, name, desc, color in guide:
-        st.markdown(
-            f"""
-            <div class="tnt-card" style="margin-bottom:6px;padding:0.8rem 1rem;">
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <div style="background:{color};border-radius:8px;padding:7px;">
-                        {icon_html(ico, 18, "white")}
-                    </div>
+        st.markdown(f"""
+            <div class="tnt-card" style="margin-bottom:6px; padding:0.6rem 1rem;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="background:{color}; border-radius:8px; padding:5px;">{icon_html(ico, 16, "white")}</div>
                     <div>
-                        <div style="font-weight:700;font-size:0.88rem;color:#1E293B;">{name}</div>
-                        <div style="font-size:0.78rem;color:{GRAY_500};">{desc}</div>
+                        <div style="font-weight:700; font-size:0.85rem; color:#1E293B;">{name}</div>
+                        <div style="font-size:0.75rem; color:{GRAY_500};">{desc}</div>
                     </div>
                 </div>
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        
-     st.markdown('<div style="margin-top: -12px;"></div>', unsafe_allow_html=True)
-    section_title("Skala Signifikansi Temuan")
+        """, unsafe_allow_html=True)
 
-    badges_html = ""
+    # Penyeimbang Tinggi
+    st.markdown('<div style="margin-top: -10px;"></div>', unsafe_allow_html=True)
+    section_title("Skala Signifikansi Temuan")
+    
     badges = [
-        ("KRITIS", RED,   "Eskalasi segera ke Direktur"),
+        ("KRITIS", RED, "Eskalasi segera ke Direktur"),
         ("TINGGI", AMBER, "Tindakan dalam waktu dekat"),
-        ("SEDANG", BLUE,  "Pantau & rencanakan perbaikan"),
-        ("RENDAH", GREEN, "Monitor berkala"),
+        ("SEDANG", BLUE, "Pantau & rencanakan perbaikan"),
+        ("RENDAH", GREEN, "Monitor berkala")
     ]
     
-    for label, color, desc in badges:
-        badges_html += f"""
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-            <span style="background:{color};color:white;padding:2px 10px;
-            border-radius:20px;font-size:0.72rem;font-weight:700;
-            min-width:65px;text-align:center;display:inline-block;">{label}</span>
-            <span style="font-size:0.8rem;color:{GRAY_500};">{desc}</span>
+    badges_html = "".join([f"""
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+            <span style="background:{c}; color:white; padding:2px 10px; border-radius:20px; 
+            font-size:0.72rem; font-weight:700; min-width:65px; text-align:center;">{l}</span>
+            <span style="font-size:0.8rem; color:{GRAY_500};">{d}</span>
+        </div>""" for l, c, d in badges])
+
+    st.markdown(f"""
+        <div class="tnt-card" style="min-height: 165px; display: flex; flex-direction: column; justify-content: center;">
+            {badges_html}
         </div>
-        """
-    
-    st.markdown(
-        f"""
-        <div class="tnt-card">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-                <span style="background:{RED};color:white;padding:2px 10px;
-                border-radius:20px;font-size:0.72rem;font-weight:700;
-                min-width:65px;text-align:center;display:inline-block;">KRITIS</span>
-                <span style="font-size:0.8rem;color:{GRAY_500};">Eskalasi segera ke Direktur</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-                <span style="background:{AMBER};color:white;padding:2px 10px;
-                border-radius:20px;font-size:0.72rem;font-weight:700;
-                min-width:65px;text-align:center;display:inline-block;">TINGGI</span>
-                <span style="font-size:0.8rem;color:{GRAY_500};">Tindakan dalam waktu dekat</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-                <span style="background:{BLUE};color:white;padding:2px 10px;
-                border-radius:20px;font-size:0.72rem;font-weight:700;
-                min-width:65px;text-align:center;display:inline-block;">SEDANG</span>
-                <span style="font-size:0.8rem;color:{GRAY_500};">Pantau & rencanakan perbaikan</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;">
-                <span style="background:{GREEN};color:white;padding:2px 10px;
-                border-radius:20px;font-size:0.72rem;font-weight:700;
-                min-width:65px;text-align:center;display:inline-block;">RENDAH</span>
-                <span style="font-size:0.8rem;color:{GRAY_500};">Monitor berkala</span>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    """, unsafe_allow_html=True
     )
         
 st.divider()
