@@ -157,13 +157,11 @@ with col_l:
         unsafe_allow_html=True,
     )
 
+    section_title("Lingkup Pengawasan SPI")
+    
     st.markdown(
         f"""
-        <div class="tnt-card" style="margin-top:0.5rem;">
-            <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;
-                        letter-spacing:0.08em;color:{GRAY_500};margin-bottom:0.5rem;">
-                Lingkup Pengawasan SPI
-            </div>
+        <div class="tnt-card" style="margin-top:0.5rem;"> 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.82rem;">
                 <div style="padding:6px 10px; background:{BLUE};color:white;
                             border-radius:6px; font-weight:500;">
