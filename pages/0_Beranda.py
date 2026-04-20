@@ -138,20 +138,27 @@ col_l, col_r = st.columns([1.3, 1])
 
 with col_l:
     section_title("Tentang Sistem")
-    st.markdown(f"""
+    st.markdown(
+        f"""
         <div class="tnt-card" style="border-left:4px solid {BLUE}; background:#EEF4FF;">
             <div style="font-size:0.95rem; line-height:1.75; color:#1E293B;">
-                <strong>T.U.N.T.A.S</strong> adalah sistem manajemen audit internal berbasis web yang memungkinkan:
+                <strong>T.U.N.T.A.S</strong> adalah sistem manajemen audit internal
+                berbasis web untuk SPI PT. PG Candi Baru yang memungkinkan:
                 <ul style="margin:0.5rem 0 0 0; padding-left:1.1rem;">
                     <li>Pencatatan temuan audit standar <strong>5C (IIA)</strong></li>
-                    <li>Monitoring tindak lanjut secara <strong>real-time</strong></li>
+                    <li>Monitoring tindak lanjut rekomendasi secara <strong>real-time</strong></li>
+                    <li>Visualisasi interaktif untuk pelaporan kepada <strong>Direktur</strong></li>
+                    <li>Alert otomatis tindak lanjut yang melewati <strong>deadline</strong></li>
                 </ul>
             </div>
         </div>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True,
+    )
 
     section_title("Lingkup Pengawasan SPI")
-    st.markdown(f"""
+    st.markdown(
+        f"""
         <div class="tnt-card" style="margin-top:0.5rem; min-height: 165px;"> 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.82rem;">
                 <div style="padding:8px 10px; background:{BLUE}; color:white; border-radius:6px; font-weight:500;">
@@ -174,7 +181,8 @@ with col_l:
                 </div>
             </div>
         </div>
-    """, unsafe_allow_html=True)
+    """, unsafe_allow_html=True
+    )
 
 with col_r:
     section_title("Panduan Penggunaan")
@@ -184,7 +192,8 @@ with col_r:
         ("action_plans", "Action Plans", "Update tindak lanjut", GREEN),
     ]
     for ico, name, desc, color in guide:
-        st.markdown(f"""
+        st.markdown(
+            f"""
             <div class="tnt-card" style="margin-bottom:6px; padding:0.6rem 1rem;">
                 <div style="display:flex; align-items:center; gap:10px;">
                     <div style="background:{color}; border-radius:8px; padding:5px;">{icon_html(ico, 16, "white")}</div>
@@ -194,9 +203,9 @@ with col_r:
                     </div>
                 </div>
             </div>
-        """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True
+        )
 
-    # Penyeimbang Tinggi
     st.markdown('<div style="margin-top: -10px;"></div>', unsafe_allow_html=True)
     section_title("Skala Signifikansi Temuan")
     
@@ -214,7 +223,8 @@ with col_r:
             <span style="font-size:0.8rem; color:{GRAY_500};">{d}</span>
         </div>""" for l, c, d in badges])
 
-    st.markdown(f"""
+    st.markdown(
+        f"""
         <div class="tnt-card" style="min-height: 165px; display: flex; flex-direction: column; justify-content: center;">
             {badges_html}
         </div>
