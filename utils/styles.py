@@ -66,7 +66,7 @@ _GLOBAL_CSS = f"""
 <style>
 /* CSS untuk memperbaiki posisi halaman yang 'melorot' */
     .block-container {{
-        padding-top: 1rem !important;
+        padding-top: 2rem !important;
         padding-bottom: 1rem !important;
         padding-left: 3rem !important;
         padding-right: 3rem !important;
