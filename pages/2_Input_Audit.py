@@ -92,7 +92,7 @@ if df_units.empty:
 unit_options = get_unit_options(df_units)
 
 # ── Tab: Form / Riwayat ───────────────────────────────────────────────────────
-tab_form, tab_history = st.tabs([
+tab_form, tab_respons, tab_history = st.tabs([
     "Form Input Temuan Baru",
     "Update Respons Auditee",
     "Riwayat & Export",
