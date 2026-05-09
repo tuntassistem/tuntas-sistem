@@ -146,9 +146,10 @@ Form pencatatan temuan standar **5C (IIA)**:
 Field tambahan: Nomor Temuan (format `T-SPI-TAHUN-NNN`), Unit Kerja, Tanggal, Auditor PIC, Tingkat Signifikansi (`KRITIS` / `TINGGI` / `SEDANG` / `RENDAH`), dan Kategori.
 
 Tab **Update Respons Auditee**: 
+| Fitur | Fungsi |
 |---|---|
-| Form | Respons Auditee
-| Pop Up | Detail 5C
+| Form | Memasukkan Respons Auditee |
+| Pop Up | Melihat Detail 5C |
 
 Tab **Riwayat & Export**: tabel 10 temuan terbaru + tombol unduh CSV seluruh `audit_findings`.
 
