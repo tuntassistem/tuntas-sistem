@@ -466,7 +466,7 @@ with tab_respons:
                         )
  
                     resp_submit = st.form_submit_button(
-                        f"{icon_html('success',14,'white')} &nbsp;Simpan Tanggapan",
+                        "Simpan Tanggapan",
                         type="primary",
                     )
  
