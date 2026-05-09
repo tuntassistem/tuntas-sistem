@@ -50,23 +50,23 @@ T.U.N.T.A.S menggunakan pola **Router Murni** untuk menghindari *double-render g
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                         app.py                              │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  1. Inisialisasi Authenticator (sekali, di           │   │
-│  │     session_state)                                   │   │
-│  │  2. Silent cookie check → location="unrendered"     │   │
-│  │  3. Routing berdasarkan authentication_status        │   │
-│  └─────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  1. Inisialisasi Authenticator (sekali, di          │    │
+│  │     session_state)                                  │    │
+│  │  2. Silent cookie check → location="unrendered"     │    │
+│  │  3. Routing berdasarkan authentication_status       │    │
+│  └─────────────────────────────────────────────────────┘    │
 │              │                         │                    │
 │       Status = True             Status = False/None         │
 │              ▼                         ▼                    │
-│   ┌──────────────────┐     ┌─────────────────────┐        │
-│   │  Sidebar + Menu  │     │  pages/login_pg.py  │        │
-│   │  ─────────────── │     │  (render form saja) │        │
-│   │  0_Beranda.py    │     └─────────────────────┘        │
-│   │  1_Dashboard.py  │                                     │
-│   │  2_Input_Audit   │                                     │
-│   │  3_Action_Plans  │                                     │
-│   └──────────────────┘                                     │
+│   ┌──────────────────┐     ┌─────────────────────┐          │
+│   │  Sidebar + Menu  │     │  pages/login_pg.py  │          │
+│   │  ─────────────── │     │  (render form saja) │          │
+│   │  0_Beranda.py    │     └─────────────────────┘          │
+│   │  1_Dashboard.py  │                                      │
+│   │  2_Input_Audit   │                                      │
+│   │  3_Action_Plans  │                                      │
+│   └──────────────────┘                                      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
