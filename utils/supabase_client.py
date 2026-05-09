@@ -84,7 +84,7 @@ def fetch_unit_kerja() -> pd.DataFrame:
 
 @st.cache_data(ttl=60, max_entries=1, show_spinner=False)
 def fetch_audit_findings() -> pd.DataFrame:
-    COLS = ("id, nomor_temuan, judul_temuan, tingkat_signifikansi, "
+    COLS = ("id, nomor_temuan, judul_temuan, kondisi, tingkat_signifikansi, "
             "kategori_temuan, status_temuan, tgl_temuan, auditor_pic, "
             "sumber_data, unit_kerja(nama_unit, kabag_induk)")
     
