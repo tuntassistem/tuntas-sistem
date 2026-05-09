@@ -94,6 +94,7 @@ unit_options = get_unit_options(df_units)
 # ── Tab: Form / Riwayat ───────────────────────────────────────────────────────
 tab_form, tab_history = st.tabs([
     "Form Input Temuan Baru",
+    "Update Respons Auditee",
     "Riwayat & Export",
 ])
 
@@ -224,20 +225,6 @@ with tab_form:
 
         st.divider()
 
-        # ── Respons Auditee ────────────────────────────────────────────────
-        section_title("Respons Auditee (Opsional)")
-        ca, cb = st.columns([2, 1])
-        with ca:
-            tanggapan = st.text_area(
-                "Tanggapan Auditee",
-                height=75,
-                placeholder="Terus, kata mereka gimana? Aman?",
-            )
-        with cb:
-            tgl_tanggapan = st.date_input("Tanggal Tanggapan", value=None)
-
-        st.divider()
-
         # ── Submit ─────────────────────────────────────────────────────────
         col_b1, col_b2, _ = st.columns([1.2, 1, 3])
         with col_b1:
@@ -280,8 +267,8 @@ with tab_form:
                 "kategori_temuan":      kategori,
                 "tgl_temuan":           tgl_temuan.isoformat(),
                 "auditor_pic":          auditor_pic.strip() or None,
-                "tanggapan_auditee":    tanggapan.strip()   or None,
-                "tgl_tanggapan":        tgl_tanggapan.isoformat() if tgl_tanggapan else None,
+                "tanggapan_auditee":    None,
+                "tgl_tanggapan":        None,
                 "sumber_data":          "Manual",
                 "status_temuan":        "OPEN",
             }
@@ -293,7 +280,9 @@ with tab_form:
                     f'<div style="display:flex;align-items:center;gap:8px;">'
                     f'{icon_html("success",20,GREEN)}'
                     f'<strong style="color:{GREEN};font-size:0.95rem;">'
-                    f'Temuan <code>{nomor_temuan.upper()}</code> berhasil disimpan!</strong>'
+                    f'Temuan <code>{nomor_temuan.upper()}</code> berhasil disimpan! '
+                    f'Lengkapi tanggapan auditee kapan saja via tab '
+                    f'<em>Update Respons Auditee</em>.</strong>'
                     f'</div>'
                     f'</div>',
                     unsafe_allow_html=True,
@@ -314,7 +303,205 @@ with tab_form:
                     st.error(f"Gagal menyimpan: {e}")
 
 # ════════════════════════════════════════════════════════════════════════════
-# TAB 2 — RIWAYAT & EXPORT
+# TAB 2 — UPDATE RESPONS AUDITEE
+# ════════════════════════════════════════════════════════════════════════════
+with tab_respons:
+    section_title("Update Respons Auditee")
+ 
+    # ── Info banner ───────────────────────────────────────────────────────
+    st.markdown(
+        f'<div style="background:{GREEN_LIGHT};border-left:4px solid {GREEN};'
+        f'padding:0.6rem 1rem;border-radius:0 8px 8px 0;'
+        f'font-size:0.82rem;color:#064E3B;margin-bottom:1rem;">'
+        f'{icon_html("edit",14,GREEN)} &nbsp;'
+        f'Pilih temuan yang sudah tersimpan, lalu isi tanggapan auditee dan '
+        f'tanggal diterimanya. Data akan di-<em>UPDATE</em> langsung ke Supabase '
+        f'tanpa mengubah data 5C yang sudah ada.'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+ 
+    # ── Load data temuan untuk selectbox ──────────────────────────────────
+    with st.spinner("Memuat daftar temuan..."):
+        df_findings = fetch_audit_findings()
+ 
+    if df_findings.empty:
+        info_card(
+            f'{icon_html("info",14,BLUE)} &nbsp;'
+            'Belum ada temuan dalam database. Tambahkan temuan melalui tab '
+            '<strong>Form Input Temuan Baru</strong> terlebih dahulu.',
+        )
+    else:
+        # ── Pencarian + Selectbox ─────────────────────────────────────────
+        keyword_resp = st.text_input(
+            "Cari Temuan",
+            placeholder="Ketik nomor atau judul temuan…",
+            key="resp_search",
+        )
+ 
+        df_resp_filter = df_findings.copy()
+        if keyword_resp:
+            mask = (
+                df_resp_filter["nomor_temuan"].astype(str)
+                .str.contains(keyword_resp, case=False, na=False)
+                | df_resp_filter["judul_temuan"].astype(str)
+                .str.contains(keyword_resp, case=False, na=False)
+            )
+            df_resp_filter = df_resp_filter[mask]
+ 
+        if df_resp_filter.empty:
+            info_card(f'{icon_html("info",14,BLUE)} &nbsp;Tidak ada temuan yang cocok dengan pencarian.')
+        else:
+            # Buat label: "[NOMOR] Judul (maks 60 karakter)"
+            finding_opts_resp = {
+                f"[{row['nomor_temuan']}]  {str(row['judul_temuan'])[:60]}": row["id"]
+                for _, row in df_resp_filter.iterrows()
+            }
+ 
+            sel_label_resp = st.selectbox(
+                "Pilih Temuan *",
+                options=list(finding_opts_resp.keys()),
+                key="resp_selectbox",
+            )
+ 
+            if sel_label_resp:
+                sel_id_resp = finding_opts_resp[sel_label_resp]
+                row_resp = df_findings[df_findings["id"] == sel_id_resp].iloc[0]
+ 
+                # ── Ringkasan temuan terpilih ─────────────────────────────
+                has_tanggapan_existing = bool(
+                    str(row_resp.get("tanggapan_auditee", "")).strip()
+                    not in ("", "None", "nan")
+                )
+                badge_html = (
+                    f'<span style="background:{GREEN};color:white;font-size:0.7rem;'
+                    f'padding:2px 8px;border-radius:12px;margin-left:6px;">'
+                    f'Sudah ada tanggapan</span>'
+                    if has_tanggapan_existing else
+                    f'<span style="background:{AMBER};color:white;font-size:0.7rem;'
+                    f'padding:2px 8px;border-radius:12px;margin-left:6px;">'
+                    f'Belum ada tanggapan</span>'
+                )
+ 
+                kondisi_singkat = str(row_resp.get("kondisi", "—"))[:160]
+                if len(str(row_resp.get("kondisi", ""))) > 160:
+                    kondisi_singkat += "…"
+ 
+                st.markdown(
+                    f'<div class="tnt-card" style="border-left:4px solid {BLUE};'
+                    f'background:#EEF4FF;margin-bottom:1rem;">'
+                    f'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
+                    f'{icon_html("file",14,BLUE)}'
+                    f'<strong style="font-size:0.88rem;color:#1E293B;">'
+                    f'{row_resp.get("nomor_temuan","—")}'
+                    f'</strong>'
+                    f'{badge_html}'
+                    f'</div>'
+                    f'<div style="font-size:0.85rem;color:#1E293B;font-weight:600;margin-bottom:4px;">'
+                    f'{row_resp.get("judul_temuan","—")}'
+                    f'</div>'
+                    f'<div style="font-size:0.78rem;color:{GRAY_500};line-height:1.5;">'
+                    f'<strong>Kondisi:</strong> {kondisi_singkat}'
+                    f'</div>'
+                    f'<div style="font-size:0.75rem;color:{GRAY_500};margin-top:6px;">'
+                    f'{icon_html("user",11,GRAY_500)}&nbsp;Auditor: {row_resp.get("auditor_pic","—")}'
+                    f'&nbsp;&nbsp;|&nbsp;&nbsp;'
+                    f'{icon_html("calendar",11,GRAY_500)}&nbsp;Tgl: {row_resp.get("tgl_temuan","—")}'
+                    f'&nbsp;&nbsp;|&nbsp;&nbsp;'
+                    f'Signifikansi: <strong>{row_resp.get("tingkat_signifikansi","—")}</strong>'
+                    f'</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+ 
+                # ── Form update tanggapan ─────────────────────────────────
+                with st.form("form_respons_auditee", clear_on_submit=False):
+                    st.markdown(
+                        f'<div style="font-size:0.8rem;font-weight:600;color:{GRAY_500};'
+                        f'margin-bottom:0.25rem;">'
+                        f'{icon_html("edit",13,GREEN)} &nbsp;Tanggapan / Respons Auditee *</div>',
+                        unsafe_allow_html=True,
+                    )
+                    new_tanggapan = st.text_area(
+                        "tanggapan_resp_hidden",
+                        label_visibility="collapsed",
+                        value=str(row_resp.get("tanggapan_auditee", "")).replace("None","").replace("nan",""),
+                        height=130,
+                        placeholder="Apa tanggapan dari auditee atas temuan ini? "
+                                    "Apakah mereka setuju, berencana perbaikan, atau ada penjelasan?",
+                    )
+ 
+                    r1, r2 = st.columns([1, 2])
+                    with r1:
+                        st.markdown(
+                            f'<div style="font-size:0.8rem;font-weight:600;color:{GRAY_500};'
+                            f'margin-bottom:0.25rem;">'
+                            f'{icon_html("calendar",13,GREEN)} &nbsp;Tanggal Tanggapan *</div>',
+                            unsafe_allow_html=True,
+                        )
+                        existing_tgl = row_resp.get("tgl_tanggapan", None)
+                        try:
+                            default_tgl = (
+                                date.fromisoformat(str(existing_tgl))
+                                if existing_tgl and str(existing_tgl) not in ("None","nan","")
+                                else date.today()
+                            )
+                        except ValueError:
+                            default_tgl = date.today()
+ 
+                        new_tgl_tanggapan = st.date_input(
+                            "tgl_resp_hidden",
+                            label_visibility="collapsed",
+                            value=default_tgl,
+                        )
+                    with r2:
+                        st.markdown(
+                            f'<div style="font-size:0.78rem;color:{GRAY_500};'
+                            f'padding-top:0.4rem;line-height:1.5;">'
+                            f'{icon_html("info",12,GRAY_500)}&nbsp;'
+                            f'Hanya field <em>Tanggapan</em> dan <em>Tanggal</em> yang diperbarui. '
+                            f'Data 5C temuan tidak akan tersentuh.'
+                            f'</div>',
+                            unsafe_allow_html=True,
+                        )
+ 
+                    resp_submit = st.form_submit_button(
+                        f"{icon_html('success',14,'white')} &nbsp;Simpan Tanggapan",
+                        type="primary",
+                    )
+ 
+                if resp_submit:
+                    if not new_tanggapan.strip():
+                        st.error("Tanggapan auditee wajib diisi sebelum disimpan.")
+                    else:
+                        try:
+                            upd_resp = {
+                                "tanggapan_auditee": new_tanggapan.strip(),
+                                "tgl_tanggapan":     new_tgl_tanggapan.isoformat(),
+                            }
+                            get_supabase_admin() \
+                                .table("audit_findings") \
+                                .update(upd_resp) \
+                                .eq("id", sel_id_resp) \
+                                .execute()
+                            clear_all_cache()
+                            st.markdown(
+                                f'<div class="tnt-card tnt-card-green">'
+                                f'<div style="display:flex;align-items:center;gap:8px;">'
+                                f'{icon_html("success",18,GREEN)}'
+                                f'<strong style="color:{GREEN};">'
+                                f'Tanggapan untuk temuan <code>{row_resp.get("nomor_temuan","")}</code> '
+                                f'berhasil disimpan!</strong>'
+                                f'</div>'
+                                f'</div>',
+                                unsafe_allow_html=True,
+                            )
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Gagal menyimpan tanggapan: {e}")
+
+# ════════════════════════════════════════════════════════════════════════════
+# TAB 3 — RIWAYAT & EXPORT
 # ════════════════════════════════════════════════════════════════════════════
 with tab_history:
     col_prev, col_exp = st.columns([2, 1])
