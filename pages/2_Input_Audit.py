@@ -23,19 +23,49 @@ st.set_page_config(
     layout="wide",
 )
 
+# --- IMPORT GABUNGAN (BIAR RAPI) ---
+from utils.supabase_client import (
+    fetch_unit_kerja, 
+    fetch_audit_findings, 
+    fetch_finding_detail,  # Fungsi untuk ambil 5C
+    get_supabase_admin, 
+    get_unit_options, 
+    clear_all_cache,
+)
 from utils.styles import (
     inject_global_css, page_header, section_title, info_card,
     BLUE, GREEN, RED, AMBER, GRAY_200, GRAY_500, TEXT_MAIN,
     BLUE_LIGHT, GREEN_LIGHT,
 )
 from utils.icons import icon_html
-from utils.supabase_client import (
-    fetch_unit_kerja, fetch_audit_findings,
-    get_supabase_admin, get_unit_options, clear_all_cache,
-)
 from utils.export_utils import render_export_audit_findings
 
 inject_global_css()
+
+# ── FUNGSI POP-UP DETAIL ──────────────────────────────────────────────────────
+@st.dialog("Detail Lengkap Temuan (5C)", width="large")
+def show_full_detail(finding_id):
+    with st.spinner("Mengambil detail..."):
+        detail = fetch_finding_detail(finding_id)
+    
+    if not detail:
+        st.error("Gagal memuat detail.")
+        return
+
+    st.markdown(f"### {detail.get('nomor_temuan', '—')}")
+    st.markdown(f"**Judul:** {detail.get('judul_temuan', '—')}")
+    st.divider()
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(f"**Kondisi (Fakta):**\n\n{detail.get('kondisi', '—')}")
+        st.markdown(f"**Kriteria (Standar):**\n\n{detail.get('kriteria', '—')}")
+        st.markdown(f"**Sebab (Akar Masalah):**\n\n{detail.get('sebab', '—')}")
+    
+    with col2:
+        st.markdown(f"**Akibat:**\n\n{detail.get('akibat', '—')}")
+        st.markdown(f"**Rekomendasi SPI:**\n\n{detail.get('rekomendasi', '—')}")
+        st.info(f"Status: {detail.get('status_temuan', '—')}")
 
 # ── Header ────────────────────────────────────────────────────────────────────
 page_header(
@@ -413,6 +443,9 @@ with tab_respons:
                     f'</div>',
                     unsafe_allow_html=True,
                 )
+                
+                if st.button("Lihat Detail & 5C", key=f"btn_det_{row_resp.get('id')}", use_container_width=True):
+                    show_full_detail(row_resp.get('id'))
  
                 # ── Form update tanggapan ─────────────────────────────────
                 with st.form("form_respons_auditee", clear_on_submit=False):
