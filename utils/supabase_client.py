@@ -86,7 +86,8 @@ def fetch_unit_kerja() -> pd.DataFrame:
 def fetch_audit_findings() -> pd.DataFrame:
     COLS = ("id, nomor_temuan, judul_temuan, kondisi, tingkat_signifikansi, "
             "kategori_temuan, status_temuan, tgl_temuan, auditor_pic, "
-            "sumber_data, unit_kerja(nama_unit, kabag_induk)")
+            "sumber_data, created_at, "
+            "unit_kerja(nama_unit, kabag_induk)")
     
     df = _safe_fetch(get_supabase(), "audit_findings", COLS, 
                      extra_query=lambda q: q.order("tgl_temuan", desc=True))
