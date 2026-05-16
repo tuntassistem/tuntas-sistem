@@ -44,7 +44,7 @@ import json
 import time
 import streamlit as st
 import streamlit.components.v1 as components
-from st_javascript import st_javascript
+from streamlit_javascript import st_javascript
 from supabase import Client, create_client
 from typing import Optional
 
