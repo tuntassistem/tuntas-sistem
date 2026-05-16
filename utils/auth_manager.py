@@ -364,7 +364,6 @@ def logout() -> None:
 
     _js_clear_storage()
     _clear_session()
-    
     st.session_state["js_session_checked"] = False
     st.rerun()
 
