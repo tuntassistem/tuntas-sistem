@@ -7,35 +7,6 @@ iframe Streamlit Cloud menggunakan:
   1. Supabase Auth  — JWT management, refresh token, user store
   2. localStorage   — First-party storage, tidak terdampak SameSite cookie policy
   3. st.query_params — Bridge JS↔Python (localStorage → URL params → session_state)
-
-FLOW:
-  Page Load
-    → Cek session_state (in-memory, paling cepat)
-    → Cek query_params  (hasil bridge dari localStorage reader JS)
-    → Inject localStorage reader JS → triggers rerun via URL change
-    → Validate + restore via Supabase → simpan ke session_state
-
-  Login
-    → supabase.auth.sign_in_with_password()
-    → Simpan ke session_state
-    → Inject JS writer → simpan ke localStorage
-
-  Logout
-    → supabase.auth.sign_out()
-    → Inject JS cleaner → hapus dari localStorage
-    → Bersihkan session_state
-
-KEAMANAN:
-  - Access token: short-lived JWT (default 1 jam Supabase)
-  - Refresh token: long-lived, single-use, dirotasi setiap refresh
-  - localStorage: same-origin scoped, tidak bisa diakses cross-site
-  - Token di query_params: langsung dibersihkan setelah dibaca Python
-  - Tidak ada plaintext password yang pernah disimpan
-
-KOMPATIBILITAS:
-  - Tetap set st.session_state["authentication_status"] agar
-    kode existing (app.py, pages/*.py) tidak perlu banyak berubah.
-  - Tetap set st.session_state["name"] untuk tampilan sidebar.
 """
 
 from __future__ import annotations
@@ -64,10 +35,7 @@ _BUFFER_SECS   = 300                   # Refresh 5 menit sebelum expiry
 
 @st.cache_resource(show_spinner=False)
 def _get_auth_client() -> Optional[Client]:
-    """
-    Supabase client khusus auth (anon key).
-    Dipisah dari admin client di supabase_client.py agar tidak bentrok.
-    """
+    """Supabase client khusus auth (anon key)."""
     try:
         return create_client(
             st.secrets["supabase"]["url"],
@@ -82,60 +50,72 @@ def _get_auth_client() -> Optional[Client]:
 # JS INJECTORS — localStorage bridge
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _js_read_storage_v2() -> Optional[dict | str]:
-    """
-    Membaca localStorage secara aman tanpa mengubah URL browser.
-    Mengembalikan "EMPTY" jika data memang tidak ada.
-    """
-    js_code = f"""
-    (function() {{
-        try {{
-            var stored = localStorage.getItem("{_STORAGE_KEY}");
-            if (!stored) return "EMPTY";  // <── Kuncinya di sini, jangan return null
-            return JSON.parse(stored);
-        }} catch (e) {{
-            return "EMPTY";
-        }}
-    }})()
-    """
-    try:
-        return st_javascript(js_code)
-    except Exception:
-        return "EMPTY"
+def _js_read_storage() -> None:
+    """Membaca localStorage via URL query params parent window."""
+    components.html(
+        f"""
+        <script>
+        (function() {{
+            try {{
+                var STORAGE_KEY = "{_STORAGE_KEY}";
+                var stored = localStorage.getItem(STORAGE_KEY);
+                if (!stored) return;
+
+                var data;
+                try {{ data = JSON.parse(stored); }}
+                catch (e) {{
+                    localStorage.removeItem(STORAGE_KEY);
+                    return;
+                }}
+
+                if (!data || !data.access_token || !data.refresh_token) return;
+
+                var parentSearch = window.parent.location.search;
+                var parentParams = new URLSearchParams(parentSearch);
+                if (parentParams.get("{_PARAM_TOKEN}")) return;
+
+                parentParams.set("{_PARAM_TOKEN}",   data.access_token);
+                parentParams.set("{_PARAM_REFRESH}",  data.refresh_token);
+                parentParams.set("{_PARAM_EXPIRY}",   String(data.expires_at || 0));
+
+                window.parent.location.search = parentParams.toString();
+
+            }} catch (err) {{
+                try {{
+                    var stored2 = localStorage.getItem("{_STORAGE_KEY}");
+                    if (!stored2) return;
+                    var data2 = JSON.parse(stored2);
+                    if (!data2 || !data2.access_token) return;
+
+                    var params2 = new URLSearchParams(window.location.search);
+                    if (params2.get("{_PARAM_TOKEN}")) return;
+
+                    params2.set("{_PARAM_TOKEN}",   data2.access_token);
+                    params2.set("{_PARAM_REFRESH}",  data2.refresh_token);
+                    params2.set("{_PARAM_EXPIRY}",   String(data2.expires_at || 0));
+                    window.location.search = params2.toString();
+                }} catch (e2) {{ /* silent */ }}
+            }}
+        }})();
+        </script>
+        """,
+        height=0,
+        scrolling=False,
+    )
+
 
 def _js_write_storage(access_token: str, refresh_token: str, expires_at: int) -> None:
-    """Inject JS untuk menyimpan session ke localStorage dengan aman."""
+    """Inject JS untuk menyimpan session ke localStorage."""
     payload = json.dumps({
         "access_token":  access_token,
         "refresh_token": refresh_token,
         "expires_at":    expires_at,
     })
-    
-    js_code = f"""
-    <script>
-    (function() {{
-        var KEY = {repr(_STORAGE_KEY)};
-        var DATA = {repr(payload)};
-        
-        // 1. Tulis ke storage lokal iframe dulu
-        try {{
-            localStorage.setItem(KEY, DATA);
-            console.log("✅ Berhasil tulis localStorage lokal");
-        }} catch(e) {{ console.error(e); }}
-        
-        // 2. Tulis ke storage parent window (Streamlit Cloud wrapper)
-        try {{
-            if (window.parent && window.parent.localStorage) {{
-                window.parent.localStorage.setItem(KEY, DATA);
-                console.log("✅ Berhasil tulis localStorage parent");
-            }}
-        }} catch(e) {{ 
-            console.warn("window.parent di-block oleh browser policy:", e); 
-        }}
-    }})();
-    </script>
-    """
-    components.html(js_code, height=0, scrolling=False)
+    components.html(
+        f"<script>localStorage.setItem({repr(_STORAGE_KEY)}, {repr(payload)});</script>",
+        height=0,
+        scrolling=False,
+    )
 
 
 def _js_clear_storage() -> None:
@@ -152,11 +132,7 @@ def _js_clear_storage() -> None:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _save_session(session_obj) -> None:
-    """
-    Simpan Supabase session ke st.session_state.
-    Tetap set "name" dan "authentication_status" untuk kompatibilitas
-    dengan kode existing di app.py dan pages/*.py.
-    """
+    """Simpan Supabase session ke st.session_state."""
     user_meta = getattr(session_obj.user, "user_metadata", {}) or {}
 
     st.session_state["tuntas_session"] = {
@@ -168,7 +144,6 @@ def _save_session(session_obj) -> None:
         "display_name":  user_meta.get("full_name", session_obj.user.email),
     }
 
-    # Kompatibilitas dengan existing code
     st.session_state["name"]                  = user_meta.get("full_name", session_obj.user.email)
     st.session_state["username"]              = session_obj.user.email
     st.session_state["authentication_status"] = True
@@ -181,24 +156,20 @@ def _clear_session() -> None:
 
 
 def _session_still_valid() -> bool:
-    """
-    Cek apakah session di session_state masih valid.
-    Jika hampir expired, otomatis refresh.
-    """
+    """Cek apakah session di session_state masih valid."""
     sess = st.session_state.get("tuntas_session")
     if not sess:
         return False
 
     expires_at = sess.get("expires_at", 0)
     if time.time() < (expires_at - _BUFFER_SECS):
-        return True  # Masih valid, tidak perlu apa-apa
+        return True
 
-    # Hampir / sudah expired → coba refresh
     return _do_refresh(sess["refresh_token"])
 
 
 def _do_refresh(refresh_token: str) -> bool:
-    """Refresh access token menggunakan refresh_token. Returns True jika berhasil."""
+    """Refresh access token menggunakan refresh_token."""
     sb = _get_auth_client()
     if not sb:
         return False
@@ -206,7 +177,6 @@ def _do_refresh(refresh_token: str) -> bool:
         resp = sb.auth.refresh_session(refresh_token)
         if resp and resp.session:
             _save_session(resp.session)
-            # Update localStorage dengan token baru
             _js_write_storage(
                 resp.session.access_token,
                 resp.session.refresh_token,
@@ -218,29 +188,16 @@ def _do_refresh(refresh_token: str) -> bool:
     return False
 
 
-def _restore_from_tokens(
-    access_token: str,
-    refresh_token: str,
-    expires_at: int,
-) -> bool:
-    """
-    Restore session dari token pair yang datang via query_params.
-    
-    Logic:
-      - Jika access_token masih valid (belum expired) → set session langsung
-      - Jika sudah expired → gunakan refresh_token untuk dapat token baru
-    """
+def _restore_from_tokens(access_token: str, refresh_token: str, expires_at: int) -> bool:
+    """Restore session dari token pair yang datang via query_params."""
     sb = _get_auth_client()
     if not sb:
         return False
 
-    # Coba set session jika access token belum expired
     if time.time() < (expires_at - _BUFFER_SECS) and access_token:
         try:
             resp = sb.auth.set_session(access_token, refresh_token)
             if resp and getattr(resp, "user", None):
-                # set_session tidak selalu mengembalikan session object lengkap
-                # Buat session object manual
                 class _FakeSession:
                     pass
                 s = _FakeSession()
@@ -253,7 +210,6 @@ def _restore_from_tokens(
         except Exception:
             pass
 
-    # Access token expired atau set gagal → refresh
     return _do_refresh(refresh_token)
 
 
@@ -262,58 +218,28 @@ def _restore_from_tokens(
 # ─────────────────────────────────────────────────────────────────────────────
 
 def check_session() -> bool:
-    """
-    Cek dan restore session dengan pengaman siklus hidup Streamlit.
-    """
-    # 1. Cek session_state internal (jika memori RAM server masih menyimpan session)
+    """Cek dan restore session dari semua sumber."""
     if _session_still_valid():
         return True
 
-    # 2. Jika sudah dipastikan kosong pada run sebelumnya, langsung return False
-    if st.session_state.get("js_session_checked") is True:
-        return False
+    qp            = st.query_params
+    access_token  = qp.get(_PARAM_TOKEN,   "")
+    refresh_token = qp.get(_PARAM_REFRESH, "")
+    expires_at    = int(qp.get(_PARAM_EXPIRY, "0") or "0")
 
-    # 3. Jalankan pengecekan ke localStorage browser
-    # Gunakan wadah kosong kosong agar tidak merusak layout utama saat loading
-    with st.spinner("Memulihkan sesi login..."):
-        stored_data = _js_read_storage_v2()
-        
-        # KEADAAN A: Run pertama, komponen masih memuat data di browser (None)
-        if stored_data is None:
-            # Paksa Streamlit berhenti mengeksekusi kode ke bawah (jangan render halaman login dulu!)
-            st.stop() 
-        
-        # KEADAAN B: Selesai dibaca, dan hasilnya MEMANG KOSONG (User belum login)
-        if stored_data == "EMPTY":
-            st.session_state["js_session_checked"] = True
-            st.rerun() # Rerun untuk melepaskan spinner dan masuk ke login_pg bersih
-            
-        # KEADAAN C: Selesai dibaca, dan DATA SESSION DITEMUKAN!
-        if isinstance(stored_data, dict):
-            access_token = stored_data.get("access_token")
-            refresh_token = stored_data.get("refresh_token")
-            expires_at = int(stored_data.get("expires_at", 0))
+    if access_token and refresh_token:
+        st.query_params.clear()
+        if _restore_from_tokens(access_token, refresh_token, expires_at):
+            return True
 
-            if access_token and refresh_token:
-                if _restore_from_tokens(access_token, refresh_token, expires_at):
-                    st.session_state["js_session_checked"] = True
-                    st.rerun()
+    if not access_token:
+        _js_read_storage()
 
     return False
 
 
 def login(email: str, password: str) -> tuple[bool, str]:
-    """
-    Login dengan email + password via Supabase Auth.
-
-    Args:
-        email    : email user (digunakan sebagai username)
-        password : password plaintext (tidak disimpan, hanya dikirim sekali)
-
-    Returns:
-        (True, "Login berhasil!")     jika sukses
-        (False, "<pesan error>")      jika gagal
-    """
+    """Login dengan email + password via Supabase Auth."""
     if not email.strip() or not password:
         return False, "Email dan password wajib diisi."
 
@@ -329,7 +255,6 @@ def login(email: str, password: str) -> tuple[bool, str]:
 
         if resp and resp.session:
             _save_session(resp.session)
-            # Simpan ke localStorage agar persist setelah refresh
             _js_write_storage(
                 resp.session.access_token,
                 resp.session.refresh_token,
@@ -349,34 +274,21 @@ def login(email: str, password: str) -> tuple[bool, str]:
 
 
 def logout() -> None:
-    """
-    Logout user:
-      1. Sign out dari Supabase (invalidate token di server)
-      2. Hapus localStorage via JS
-      3. Bersihkan session_state
-    """
+    """Logout user total."""
     sb = _get_auth_client()
     if sb:
         try:
             sb.auth.sign_out()
         except Exception:
-            pass  # Tetap lanjut bersihkan lokal meski server gagal
+            pass
 
     _js_clear_storage()
     _clear_session()
-    
-    st.session_state["js_session_checked"] = False
     st.rerun()
 
 
 def get_current_user() -> Optional[dict]:
-    """
-    Ambil info user yang sedang login dari session_state.
-
-    Returns:
-        dict dengan keys: id, email, name
-        None jika tidak ada session aktif
-    """
+    """Ambil info user aktif."""
     sess = st.session_state.get("tuntas_session")
     if not sess:
         return None
@@ -387,18 +299,8 @@ def get_current_user() -> Optional[dict]:
     }
 
 
-def create_user_admin(
-    email: str,
-    password: str,
-    full_name: str,
-) -> tuple[bool, str]:
-    """
-    Buat user baru via Admin API Supabase.
-    HANYA untuk dijalankan oleh admin SPI melalui skrip setup,
-    bukan diekspos ke UI umum.
-
-    Membutuhkan service_role_key di secrets.toml.
-    """
+def create_user_admin(email: str, password: str, full_name: str) -> tuple[bool, str]:
+    """Buat user baru via Admin API Supabase."""
     try:
         admin_sb = create_client(
             st.secrets["supabase"]["url"],
@@ -407,7 +309,7 @@ def create_user_admin(
         resp = admin_sb.auth.admin.create_user({
             "email":            email,
             "password":         password,
-            "email_confirm":    True,  # Skip email verification
+            "email_confirm":    True,
             "user_metadata":    {"full_name": full_name},
         })
         if resp and resp.user:
