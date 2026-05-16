@@ -32,7 +32,7 @@ import streamlit as st
 
 from utils.styles import inject_global_css
 from utils.icons  import icon_html
-from utils.auth_manager import check_session, logout  # ← BARU, gantikan stauth
+from utils.auth_manager import check_session, logout
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. PAGE CONFIG
