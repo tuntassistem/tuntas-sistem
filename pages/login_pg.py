@@ -50,6 +50,7 @@ st.markdown(
 # Import setelah set_page_config
 from utils.quotes       import get_random_quote
 from utils.auth_manager import login   # ← fungsi login baru
+import time
 
 # ─────────────────────────────────────────────────────────────────────────────
 # LAYOUT LOGIN: Branding (kiri) | Form (kanan)
@@ -116,8 +117,7 @@ with col_form:
 
             if success:
                 st.success(f"✅ {message} Mengarahkan ke sistem...")
-                # Beri waktu sebentar agar JS localStorage writer ter-render
-                # sebelum rerun (penting untuk persistensi)
+                time.sleep(1.2)
                 st.rerun()
             else:
                 st.error(f"❌ {message}")
