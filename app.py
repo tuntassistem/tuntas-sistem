@@ -1,24 +1,26 @@
 """
 T.U.N.T.A.S - Trackable Unit for Networked & Transparent Audit System
-Main Entry Point & Router
-SPI PT. PG Candi Baru | v1.0
+Main Entry Point & Router  |  v1.1 — Supabase Auth + localStorage
+SPI PT. PG Candi Baru
 
-ARSITEKTUR ROUTING:
-  app.py           → router murni: cek cookie, arahkan ke halaman yang tepat
-  pages/login_pg   → halaman login (dirender sendiri, tidak campur di sini)
-  pages/0_Beranda  → home setelah login berhasil
+PERUBAHAN v1.1 (Session Persistence Fix):
+  Menggantikan streamlit-authenticator (cookie-based) dengan
+  utils/auth_manager.py (Supabase Auth + localStorage bridge).
 
-KENAPA DIPISAH?
-  Double-render glitch terjadi karena dua hal yang berjalan bersamaan
-  di file yang sama:
-    1. authenticator.login(location='unrendered') → rerun internal saat
-       pertama kali baca cookie
-    2. UI login dirender di blok else yang sama
+  MASALAH LAMA:
+    streamlit-authenticator menyimpan JWT di browser cookie dengan
+    SameSite=Lax. Browser modern memblokir third-party cookies di
+    lingkungan iframe Streamlit Cloud → forced re-login setiap refresh.
 
-  Solusi: app.py TIDAK pernah merender UI apapun untuk user yang belum
-  login. Ia hanya cek status lalu st.switch_page() ke login_pg.py.
-  login_pg.py merender form-nya sendiri dalam satu siklus render yang
-  bersih → glitch hilang, fungsi cookie tidak terganggu.
+  SOLUSI BARU:
+    1. Supabase Auth mengelola JWT + refresh token
+    2. localStorage menyimpan token (first-party, tidak kena SameSite)
+    3. JS bridge membaca localStorage → set URL query_params
+    4. Streamlit rerun → Python baca query_params → restore session
+
+  ARSITEKTUR (tidak berubah dari v1.0):
+    app.py = router murni, tidak pernah render UI untuk user yang belum login.
+    pages/login_pg.py = render form login (satu siklus render bersih).
 """
 
 from __future__ import annotations
@@ -27,10 +29,10 @@ gc.collect()
 
 import os
 import streamlit as st
-import streamlit_authenticator as stauth
 
 from utils.styles import inject_global_css
-from utils.icons import icon_html
+from utils.icons  import icon_html
+from utils.auth_manager import check_session, logout  # ← BARU, gantikan stauth
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. PAGE CONFIG
@@ -42,49 +44,24 @@ st.set_page_config(
 )
 inject_global_css()
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 2. BACA CREDENTIALS DARI secrets.toml
-#
-# Format yang dibutuhkan di .streamlit/secrets.toml:
-
-_secrets  = st.secrets.to_dict()
-_creds    = _secrets["credentials"]
-_auth_cfg = _secrets["auth"]
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 3. AUTHENTICATOR — disimpan di session_state agar TIDAK dibuat ulang
-#    setiap rerun. Objek yang sama persis dibutuhkan agar cookie JWT
-#    diverifikasi dengan kunci yang konsisten.
-# ─────────────────────────────────────────────────────────────────────────────
-if "authenticator" not in st.session_state:
-    st.session_state["authenticator"] = stauth.Authenticate(
-        _creds,
-        _auth_cfg["cookie_name"],
-        _auth_cfg["cookie_key"],
-        _auth_cfg["cookie_expiry_days"],
-    )
-
-authenticator: stauth.Authenticate = st.session_state["authenticator"]
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 4. SILENT COOKIE CHECK
-#    Hanya membaca cookie — tidak merender UI apapun.
-#    Hasil ditulis ke st.session_state["authentication_status"].
-# ─────────────────────────────────────────────────────────────────────────────
-authenticator.login(location="unrendered")
-
-# ── Definisi Halaman ──────────────────────────────────────────────────────
+# ── Definisi Halaman ───────────────────────────────────────────────────────────
 pg_login  = st.Page("pages/login_pg.py",      title="Login")
 pg_home   = st.Page("pages/0_Beranda.py",     title="Beranda",      default=True)
 pg_dash   = st.Page("pages/1_Dashboard.py",   title="Dashboard")
 pg_input  = st.Page("pages/2_Input_Audit.py", title="Input Temuan")
 pg_action = st.Page("pages/3_Action_Plans.py",title="Action Plans")
 
+# ─────────────────────────────────────────────────────────────────────────────
+# 2. SESSION CHECK
+#    Menggantikan: authenticator.login(location="unrendered")
+#    check_session() menangani semua sumber: session_state → query_params → JS
+# ─────────────────────────────────────────────────────────────────────────────
+is_authenticated = check_session()
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 5. ROUTING UTAMA
+# 3. ROUTING UTAMA
 # ─────────────────────────────────────────────────────────────────────────────
-if st.session_state.get("authentication_status"):
+if is_authenticated:
 
     pg = st.navigation(
         [pg_home, pg_dash, pg_input, pg_action],
@@ -104,10 +81,8 @@ if st.session_state.get("authentication_status"):
             ("input_temuan", pg_input,  "Input Temuan"),
             ("action_plans", pg_action, "Action Plans"),
         ]
-        cur_title = st.session_state.get("current_page_title", pg_home.title)
 
         for ico, page_obj, label in nav_items:
-            
             st.markdown(
                 f'<div style="position:relative;height:0;top:5px;left:15px;'
                 f'pointer-events:none;z-index:100;">'
@@ -127,16 +102,14 @@ if st.session_state.get("authentication_status"):
                 st.rerun()
         with col_2:
             if st.button("Keluar", type="secondary", use_container_width=True):
-                authenticator.logout(location="unrendered")
-                st.session_state["authentication_status"] = None
+                logout()        # ← Menggantikan: authenticator.logout()
                 st.rerun()
 
     pg.run()
 
 else:
-    # ── Tidak Terautentikasi: Delegasikan sepenuhnya ke login_pg.py ──────────
-    # app.py sama sekali tidak merender UI di sini → tidak ada double-render.
+    # ── Tidak Terautentikasi → Delegasikan ke login_pg.py ────────────────────
     pg = st.navigation([pg_login], position="hidden")
     pg.run()
-# ─────────────────────────────────────────────────────────────────────────────
+
 gc.collect()
