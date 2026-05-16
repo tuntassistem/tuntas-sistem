@@ -148,18 +148,38 @@ def _js_read_storage() -> None:
 
 
 def _js_write_storage(access_token: str, refresh_token: str, expires_at: int) -> None:
-    """Inject JS untuk menyimpan session ke localStorage."""
+    """Inject JS untuk menyimpan session ke localStorage dengan aman."""
     payload = json.dumps({
         "access_token":  access_token,
         "refresh_token": refresh_token,
         "expires_at":    expires_at,
     })
-    # Gunakan repr() untuk escape string dengan benar di dalam JS
-    components.html(
-        f"<script>localStorage.setItem({repr(_STORAGE_KEY)}, {repr(payload)});</script>",
-        height=0,
-        scrolling=False,
-    )
+    
+    js_code = f"""
+    <script>
+    (function() {{
+        var KEY = {repr(_STORAGE_KEY)};
+        var DATA = {repr(payload)};
+        
+        // 1. Tulis ke storage lokal iframe dulu
+        try {{
+            localStorage.setItem(KEY, DATA);
+            console.log("✅ Berhasil tulis localStorage lokal");
+        }} catch(e) {{ console.error(e); }}
+        
+        // 2. Tulis ke storage parent window (Streamlit Cloud wrapper)
+        try {{
+            if (window.parent && window.parent.localStorage) {{
+                window.parent.localStorage.setItem(KEY, DATA);
+                console.log("✅ Berhasil tulis localStorage parent");
+            }}
+        }} catch(e) {{ 
+            console.warn("window.parent di-block oleh browser policy:", e); 
+        }}
+    }})();
+    </script>
+    """
+    components.html(js_code, height=0, scrolling=False)
 
 
 def _js_clear_storage() -> None:
