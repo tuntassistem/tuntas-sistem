@@ -44,7 +44,7 @@ import json
 import time
 import streamlit as st
 import streamlit.components.v1 as components
-from streamlit_javascript import st_javascript
+from streamlit-javascript import st_javascript
 from supabase import Client, create_client
 from typing import Optional
 
@@ -82,29 +82,26 @@ def _get_auth_client() -> Optional[Client]:
 # JS INJECTORS — localStorage bridge
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _js_read_storage_v2() -> Optional[dict]:
+def _js_read_storage_v2() -> Optional[dict | str]:
     """
     Membaca localStorage secara aman tanpa mengubah URL browser.
-    Menggunakan st_javascript agar nilainya bisa langsung kembali ke Python.
+    Mengembalikan "EMPTY" jika data memang tidak ada.
     """
-    # Skrip JS murni untuk mengambil data dari localStorage aplikasi utama
     js_code = f"""
     (function() {{
         try {{
             var stored = localStorage.getItem("{_STORAGE_KEY}");
-            if (!stored) return null;
+            if (!stored) return "EMPTY";  // <── Kuncinya di sini, jangan return null
             return JSON.parse(stored);
         }} catch (e) {{
-            return null;
+            return "EMPTY";
         }}
     }})()
     """
-    # Jalankan JS dan langsung ambil return value-nya ke variabel Python!
     try:
         return st_javascript(js_code)
     except Exception:
-        return None
-
+        return "EMPTY"
 
 def _js_write_storage(access_token: str, refresh_token: str, expires_at: int) -> None:
     """Inject JS untuk menyimpan session ke localStorage dengan aman."""
@@ -266,24 +263,41 @@ def _restore_from_tokens(
 
 def check_session() -> bool:
     """
-    Cek dan restore session dari session_state atau localStorage via st_javascript.
+    Cek dan restore session dengan pengaman siklus hidup Streamlit.
     """
-    # 1. Cek session_state internal (paling cepat)
+    # 1. Cek session_state internal (jika memori RAM server masih menyimpan session)
     if _session_still_valid():
         return True
 
-    # 2. Jika di memory kosong, baca langsung dari localStorage browser via st_javascript
-    stored_data = _js_read_storage_v2()
-    
-    if stored_data and isinstance(stored_data, dict):
-        access_token = stored_data.get("access_token")
-        refresh_token = stored_data.get("refresh_token")
-        expires_at = int(stored_data.get("expires_at", 0))
+    # 2. Jika sudah dipastikan kosong pada run sebelumnya, langsung return False
+    if st.session_state.get("js_session_checked") is True:
+        return False
 
-        if access_token and refresh_token:
-            # Pulihkan session menggunakan token yang didapat
-            if _restore_from_tokens(access_token, refresh_token, expires_at):
-                return True
+    # 3. Jalankan pengecekan ke localStorage browser
+    # Gunakan wadah kosong kosong agar tidak merusak layout utama saat loading
+    with st.spinner("Memulihkan sesi login..."):
+        stored_data = _js_read_storage_v2()
+        
+        # KEADAAN A: Run pertama, komponen masih memuat data di browser (None)
+        if stored_data is None:
+            # Paksa Streamlit berhenti mengeksekusi kode ke bawah (jangan render halaman login dulu!)
+            st.stop() 
+        
+        # KEADAAN B: Selesai dibaca, dan hasilnya MEMANG KOSONG (User belum login)
+        if stored_data == "EMPTY":
+            st.session_state["js_session_checked"] = True
+            st.rerun() # Rerun untuk melepaskan spinner dan masuk ke login_pg bersih
+            
+        # KEADAAN C: Selesai dibaca, dan DATA SESSION DITEMUKAN!
+        if isinstance(stored_data, dict):
+            access_token = stored_data.get("access_token")
+            refresh_token = stored_data.get("refresh_token")
+            expires_at = int(stored_data.get("expires_at", 0))
+
+            if access_token and refresh_token:
+                if _restore_from_tokens(access_token, refresh_token, expires_at):
+                    st.session_state["js_session_checked"] = True
+                    st.rerun()
 
     return False
 
@@ -350,6 +364,9 @@ def logout() -> None:
 
     _js_clear_storage()
     _clear_session()
+    
+    st.session_state["js_session_checked"] = False
+    st.rerun()
 
 
 def get_current_user() -> Optional[dict]:
