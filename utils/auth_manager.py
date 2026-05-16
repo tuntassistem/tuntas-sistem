@@ -44,6 +44,7 @@ import json
 import time
 import streamlit as st
 import streamlit.components.v1 as components
+from st_javascript import st_javascript
 from supabase import Client, create_client
 from typing import Optional
 
@@ -81,70 +82,28 @@ def _get_auth_client() -> Optional[Client]:
 # JS INJECTORS — localStorage bridge
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _js_read_storage() -> None:
+def _js_read_storage_v2() -> Optional[dict]:
     """
-    Inject JS yang:
-      1. Membaca localStorage
-      2. Jika ada token, set ke URL query params parent window
-      3. Streamlit mendeteksi perubahan query_params → rerun otomatis
-
-    Dieksekusi hanya ketika session_state kosong DAN query_params kosong.
-    Guard `if (params.get(...))` mencegah infinite loop.
+    Membaca localStorage secara aman tanpa mengubah URL browser.
+    Menggunakan st_javascript agar nilainya bisa langsung kembali ke Python.
     """
-    components.html(
-        f"""
-        <script>
-        (function() {{
-            try {{
-                var STORAGE_KEY = "{_STORAGE_KEY}";
-                var stored = localStorage.getItem(STORAGE_KEY);
-                if (!stored) return;
-
-                var data;
-                try {{ data = JSON.parse(stored); }}
-                catch (e) {{
-                    localStorage.removeItem(STORAGE_KEY);
-                    return;
-                }}
-
-                if (!data || !data.access_token || !data.refresh_token) return;
-
-                // Guard: jika parent URL sudah punya _tk, jangan inject ulang
-                var parentSearch = window.parent.location.search;
-                var parentParams = new URLSearchParams(parentSearch);
-                if (parentParams.get("{_PARAM_TOKEN}")) return;
-
-                // Set token ke URL parent → Streamlit rerun
-                parentParams.set("{_PARAM_TOKEN}",   data.access_token);
-                parentParams.set("{_PARAM_REFRESH}",  data.refresh_token);
-                parentParams.set("{_PARAM_EXPIRY}",   String(data.expires_at || 0));
-
-                window.parent.location.search = parentParams.toString();
-
-            }} catch (err) {{
-                // Fallback: window.parent mungkin blocked di beberapa config
-                // Coba window sendiri (jika app diakses langsung, bukan via iframe)
-                try {{
-                    var stored2 = localStorage.getItem("{_STORAGE_KEY}");
-                    if (!stored2) return;
-                    var data2 = JSON.parse(stored2);
-                    if (!data2 || !data2.access_token) return;
-
-                    var params2 = new URLSearchParams(window.location.search);
-                    if (params2.get("{_PARAM_TOKEN}")) return;
-
-                    params2.set("{_PARAM_TOKEN}",   data2.access_token);
-                    params2.set("{_PARAM_REFRESH}",  data2.refresh_token);
-                    params2.set("{_PARAM_EXPIRY}",   String(data2.expires_at || 0));
-                    window.location.search = params2.toString();
-                }} catch (e2) {{ /* silent */ }}
-            }}
-        }})();
-        </script>
-        """,
-        height=0,
-        scrolling=False,
-    )
+    # Skrip JS murni untuk mengambil data dari localStorage aplikasi utama
+    js_code = f"""
+    (function() {{
+        try {{
+            var stored = localStorage.getItem("{_STORAGE_KEY}");
+            if (!stored) return null;
+            return JSON.parse(stored);
+        }} catch (e) {{
+            return null;
+        }}
+    }})()
+    """
+    # Jalankan JS dan langsung ambil return value-nya ke variabel Python!
+    try:
+        return st_javascript(js_code)
+    except Exception:
+        return None
 
 
 def _js_write_storage(access_token: str, refresh_token: str, expires_at: int) -> None:
@@ -307,37 +266,24 @@ def _restore_from_tokens(
 
 def check_session() -> bool:
     """
-    Cek dan restore session dari semua sumber yang mungkin.
-    Dipanggil di app.py setiap page load sebagai ganti
-    authenticator.login(location="unrendered").
-
-    Returns:
-        True  → User terautentikasi, lanjut render halaman
-        False → User belum login, arahkan ke login page
+    Cek dan restore session dari session_state atau localStorage via st_javascript.
     """
-
-    # ── 1. Cek session_state (in-memory, tidak perlu network) ────────────
+    # 1. Cek session_state internal (paling cepat)
     if _session_still_valid():
         return True
 
-    # ── 2. Cek query_params (hasil JS localStorage bridge) ───────────────
-    qp           = st.query_params
-    access_token  = qp.get(_PARAM_TOKEN,   "")
-    refresh_token = qp.get(_PARAM_REFRESH, "")
-    expires_at    = int(qp.get(_PARAM_EXPIRY, "0") or "0")
+    # 2. Jika di memory kosong, baca langsung dari localStorage browser via st_javascript
+    stored_data = _js_read_storage_v2()
+    
+    if stored_data and isinstance(stored_data, dict):
+        access_token = stored_data.get("access_token")
+        refresh_token = stored_data.get("refresh_token")
+        expires_at = int(stored_data.get("expires_at", 0))
 
-    if access_token and refresh_token:
-        # PENTING: hapus token dari URL sebelum proses
-        # agar tidak muncul di browser history dan tidak ter-reuse
-        st.query_params.clear()
-
-        if _restore_from_tokens(access_token, refresh_token, expires_at):
-            return True
-
-    # ── 3. Inject JS localStorage reader (jika params kosong) ────────────
-    # JS akan set query_params → Streamlit rerun → step 2 handle
-    if not access_token:
-        _js_read_storage()
+        if access_token and refresh_token:
+            # Pulihkan session menggunakan token yang didapat
+            if _restore_from_tokens(access_token, refresh_token, expires_at):
+                return True
 
     return False
 
