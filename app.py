@@ -7,18 +7,6 @@ ARSITEKTUR ROUTING:
   app.py           → router murni: cek cookie, arahkan ke halaman yang tepat
   pages/login_pg   → halaman login (dirender sendiri, tidak campur di sini)
   pages/0_Beranda  → home setelah login berhasil
-
-KENAPA DIPISAH?
-  Double-render glitch terjadi karena dua hal yang berjalan bersamaan
-  di file yang sama:
-    1. authenticator.login(location='unrendered') → rerun internal saat
-       pertama kali baca cookie
-    2. UI login dirender di blok else yang sama
-
-  Solusi: app.py TIDAK pernah merender UI apapun untuk user yang belum
-  login. Ia hanya cek status lalu st.switch_page() ke login_pg.py.
-  login_pg.py merender form-nya sendiri dalam satu siklus render yang
-  bersih → glitch hilang, fungsi cookie tidak terganggu.
 """
 
 from __future__ import annotations
