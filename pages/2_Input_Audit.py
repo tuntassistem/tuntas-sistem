@@ -146,7 +146,7 @@ with tab_form:
             )
             nomor_temuan = st.text_input(
                 "nomor_temuan_hidden", label_visibility="collapsed",
-                placeholder="T-SPI-2026-001",
+                placeholder="T-2026-001",
             )
 
             st.markdown(
