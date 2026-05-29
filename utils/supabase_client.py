@@ -156,3 +156,34 @@ def get_unit_options(df_units: pd.DataFrame) -> dict[str, str]:
 def get_finding_options(df_findings: pd.DataFrame) -> dict[str, str]:
     if df_findings.empty: return {}
     return {f"[{row['nomor_temuan']}] {str(row.get('judul_temuan', ''))[:50]}...": row["id"] for _, row in df_findings.iterrows()}
+
+# Tambahkan di paling bawah file supabase_client.py
+
+def generate_next_nomor_temuan() -> str:
+    """Generate nomor urut temuan otomatis berdasarkan tahun berjalan (T-YYYY-NNN)"""
+    from datetime import datetime
+    
+    tahun = datetime.now().year
+    prefix = f"T-{tahun}-"
+    
+    sb = get_supabase()
+    if not sb: 
+        return f"{prefix}XXX"
+        
+    try:
+        resp = sb.table("audit_findings") \
+            .select("nomor_temuan") \
+            .ilike("nomor_temuan", f"{prefix}%") \
+            .order("nomor_temuan", desc=True) \
+            .limit(1) \
+            .execute()
+            
+        if resp.data:
+            last_nomor = resp.data[0]["nomor_temuan"]
+            next_counter = int(last_nomor.split("-")[-1]) + 1
+        else:
+            next_counter = 1
+            
+        return f"{prefix}{next_counter:03d}"
+    except Exception as e:
+        return f"{prefix}XXX"
