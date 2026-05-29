@@ -27,10 +27,11 @@ st.set_page_config(
 from utils.supabase_client import (
     fetch_unit_kerja, 
     fetch_audit_findings, 
-    fetch_finding_detail,  # Fungsi untuk ambil 5C
+    fetch_finding_detail,
     get_supabase_admin, 
     get_unit_options, 
     clear_all_cache,
+    generate_next_nomor_temuan,
 )
 from utils.styles import (
     inject_global_css, page_header, section_title, info_card,
@@ -104,8 +105,8 @@ with st.sidebar:
     st.markdown(
         f'<div style="font-size:0.7rem;color:rgba(255,255,255,0.45);padding:0 0.5rem;">'
         f'Format No. Temuan:<br>'
-        f'<strong style="color:rgba(255,255,255,0.7);">T-SPI-TAHUN-NNN</strong><br>'
-        f'Contoh: T-SPI-2026-007</div>',
+        f'<strong style="color:rgba(255,255,255,0.7);">T-TAHUN-NNN</strong><br>'
+        f'Contoh: T-2026-001</div>',
         unsafe_allow_html=True,
     )
 
@@ -141,12 +142,16 @@ with tab_form:
         with col1:
             st.markdown(
                 f'<label style="font-size:0.8rem;font-weight:600;color:{GRAY_500};">'
-                f'{icon_html("file",13,BLUE)} &nbsp;Nomor Temuan *</label>',
+                f'{icon_html("file",13,BLUE)} &nbsp;Nomor Temuan (Otomatis) *</label>',
                 unsafe_allow_html=True,
             )
+            
+            auto_nomor = generate_next_nomor_temuan()
+            
             nomor_temuan = st.text_input(
                 "nomor_temuan_hidden", label_visibility="collapsed",
-                placeholder="T-2026-001",
+                value=auto_nomor,
+                disabled=True,
             )
 
             st.markdown(
